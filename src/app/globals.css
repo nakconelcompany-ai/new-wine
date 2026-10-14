@@ -1,8 +1,8 @@
 :root {
   --bg: #230709;
-  --bg-2: #2c0a0e;
-  --surface: #37121a;
-  --surface-2: #451a21;
+  --bg-2: #080304;
+  --surface: #0f0608;
+  --surface-2: #1a0b0d;
   --border: rgba(230, 192, 116, 0.30);
   --gold: #e2bb6c;
   --gold-bright: #f4daa0;
@@ -80,7 +80,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
 .panel p { color: var(--muted); margin: 0; }
 .panel.success .check { width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 50%; border: 2px solid var(--gold); color: var(--gold-bright); display: grid; place-items: center; font-size: 30px; }
 
-.progress { position: sticky; top: 0; z-index: 20; margin: 28px auto 0; max-width: 960px; padding: 12px 16px 10px; background: rgba(35,7,9,.94); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+.progress { position: sticky; top: 0; z-index: 20; margin: 28px auto 0; max-width: 960px; padding: 12px 16px 10px; background: rgba(10,4,5,.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
 .progress-top { display: flex; align-items: center; gap: 16px; }
 .progress-text { margin: 0; font-size: 14px; white-space: nowrap; color: var(--muted); }
 .progress-text strong { color: var(--gold-bright); }
