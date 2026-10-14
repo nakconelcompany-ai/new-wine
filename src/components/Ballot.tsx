@@ -1,0 +1,324 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+type Nominee = { id: string; name: string };
+type Category = { id: string; key: string; name: string; nominees: Nominee[] };
+type BallotData = {
+  phase: 'not_open' | 'open' | 'closed' | 'unavailable';
+  scheduled: boolean;
+  startsAt: string | null;
+  endsAt: string | null;
+  resultsPublished: boolean;
+  categories?: Category[];
+};
+type ResultsData = {
+  ballots: number;
+  categories: { name: string; tie: boolean; totalVotes: number; winners: { name: string; votes: number }[] }[];
+};
+
+const STORE = 'nw-selections-v1';
+const fmt = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+
+export default function Ballot() {
+  const [data, setData] = useState<BallotData | null>(null);
+  const [loadError, setLoadError] = useState('');
+  const [results, setResults] = useState<ResultsData | null>(null);
+  const [sel, setSel] = useState<Record<string, string>>({});
+  const [code, setCode] = useState('');
+  const [errorCats, setErrorCats] = useState<Set<string>>(new Set());
+  const [formError, setFormError] = useState('');
+  const [missingList, setMissingList] = useState<Category[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const busy = useRef(false);
+  const alertRef = useRef<HTMLDivElement>(null);
+  const codeRef = useRef<HTMLInputElement>(null);
+  const topRef = useRef<HTMLElement>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ballot', { cache: 'no-store' });
+      if (!res.ok) throw new Error();
+      const d: BallotData = await res.json();
+      setData(d);
+      setLoadError('');
+      if (d.categories) {
+        // Restore saved choices, keeping only those that are still valid.
+        try {
+          const saved = JSON.parse(sessionStorage.getItem(STORE) || '{}') as Record<string, string>;
+          const valid: Record<string, string> = {};
+          for (const c of d.categories) if (saved[c.id] && c.nominees.some((n) => n.id === saved[c.id])) valid[c.id] = saved[c.id];
+          setSel((prev) => ({ ...valid, ...prev }));
+        } catch { /* storage unavailable */ }
+      }
+      if (d.resultsPublished) {
+        const r = await fetch('/api/results', { cache: 'no-store' });
+        if (r.ok) setResults(await r.json());
+      } else {
+        setResults(null);
+      }
+    } catch {
+      setLoadError('We could not load the ballot. Please check your connection and refresh.');
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+    const onVis = () => { if (document.visibilityState === 'visible') load(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [load]);
+
+  useEffect(() => {
+    try { sessionStorage.setItem(STORE, JSON.stringify(sel)); } catch { /* ignore */ }
+  }, [sel]);
+
+  const cats = useMemo(() => data?.categories ?? [], [data]);
+  const completed = cats.filter((c) => sel[c.id]).length;
+
+  function choose(catId: string, nomId: string) {
+    setSel((p) => ({ ...p, [catId]: nomId })); // radio semantics: one value per category replaces the previous
+    setErrorCats((p) => { if (!p.has(catId)) return p; const n = new Set(p); n.delete(catId); return n; });
+  }
+
+  function showProblem(msg: string, missing: Category[]) {
+    setFormError(msg);
+    setMissingList(missing);
+    setErrorCats(new Set(missing.map((m) => m.id)));
+    setTimeout(() => alertRef.current?.focus(), 0);
+  }
+
+  async function submit() {
+    if (busy.current) return; // blocks double-clicks
+    const missing = cats.filter((c) => !sel[c.id]);
+    if (missing.length) {
+      showProblem(`Every category needs one selection — ${missing.length} still to go.`, missing);
+      return;
+    }
+    if (!code.trim()) {
+      setFormError('Enter your personal voting code to submit your ballot.');
+      setMissingList([]);
+      setTimeout(() => codeRef.current?.focus(), 0);
+      return;
+    }
+    busy.current = true;
+    setSubmitting(true);
+    setFormError('');
+    setMissingList([]);
+    try {
+      const res = await fetch('/api/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, selections: sel }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.status === 201) {
+        try { sessionStorage.removeItem(STORE); } catch { /* ignore */ }
+        setDone(true);
+        setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+      } else {
+        if (Array.isArray(body.missing)) {
+          showProblem(body.error || 'Please review your choices.', cats.filter((c) => body.missing.includes(c.name)));
+        } else {
+          setFormError(body.error || 'Your ballot could not be submitted. Please try again.');
+          setTimeout(() => alertRef.current?.focus(), 0);
+        }
+        if (res.status === 409 || res.status === 503) load();
+      }
+    } catch {
+      setFormError('Network problem — your choices are still here. Please try again.');
+      setTimeout(() => alertRef.current?.focus(), 0);
+    } finally {
+      busy.current = false;
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <section id="vote" className="vote-intro" ref={topRef} aria-labelledby="vote-heading">
+        <h2 id="vote-heading" className="section-title">Celebrate Your Favourites</h2>
+        <div className="ornament small" aria-hidden="true"><span /><i>◆</i><span /></div>
+        <p className="lead">
+          Choose one nominee in each category, then review your choices at the bottom of the page before you submit.
+        </p>
+        <StatusPill data={data} loadError={loadError} />
+      </section>
+
+      {loadError && <p className="notice error" role="alert">{loadError}</p>}
+      {!data && !loadError && <div className="skeleton" aria-busy="true" aria-label="Loading the ballot" />}
+
+      {data && data.phase === 'not_open' && (
+        <div className="panel center">
+          <h3>Voting hasn’t opened yet</h3>
+          <p>
+            {data.scheduled && data.startsAt
+              ? `Voting opens on ${fmt(data.startsAt)}. Please come back then.`
+              : 'The ballot is being prepared. Please check back soon.'}
+          </p>
+        </div>
+      )}
+      {data && data.phase === 'unavailable' && (
+        <div className="panel center">
+          <h3>The ballot is being prepared</h3>
+          <p>Some categories are still being set up. Please check back shortly.</p>
+        </div>
+      )}
+      {data && data.phase === 'closed' && (
+        <div className="panel center">
+          <h3>Voting has closed</h3>
+          <p>Thank you to everyone who took part.{data.resultsPublished ? '' : ' Results will be announced soon.'}</p>
+        </div>
+      )}
+
+      {data?.phase === 'open' && done && (
+        <div className="panel center success" role="status">
+          <div className="check" aria-hidden="true">✓</div>
+          <h3>Thank you for voting!</h3>
+          <p>Your ballot has been recorded. Your voting code has now been used and cannot be used again.</p>
+        </div>
+      )}
+
+      {data?.phase === 'open' && !done && cats.length > 0 && (
+        <>
+          <nav className="progress" aria-label="Ballot progress">
+            <div className="progress-top">
+              <p className="progress-text" aria-live="polite">
+                <strong>{completed}</strong> of {cats.length} categories completed
+              </p>
+              <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={cats.length} aria-valuenow={completed} aria-label="Categories completed">
+                <div className="bar-fill" style={{ width: `${(completed / cats.length) * 100}%` }} />
+              </div>
+            </div>
+            <ol className="chips">
+              {cats.map((c, i) => {
+                const state = errorCats.has(c.id) ? 'error' : sel[c.id] ? 'done' : 'todo';
+                return (
+                  <li key={c.id}>
+                    <a href={`#cat-${c.key}`} className={`chip ${state}`}
+                       aria-label={`${c.name}: ${state === 'done' ? 'answered' : state === 'error' ? 'needs a selection' : 'not answered yet'}`}>
+                      {i + 1}
+                    </a>
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
+
+          <div className="categories">
+            {cats.map((c, i) => {
+              const err = errorCats.has(c.id);
+              return (
+                <section key={c.id} id={`cat-${c.key}`} className={`category ${err ? 'has-error' : ''}`} aria-labelledby={`h-${c.key}`}>
+                  <fieldset aria-describedby={err ? `e-${c.key}` : undefined}>
+                    <legend>
+                      <span className="cat-num">Category {i + 1} of {cats.length}</span>
+                      <span id={`h-${c.key}`} className="cat-name">{c.name}</span>
+                    </legend>
+                    {err && <p id={`e-${c.key}`} className="cat-error" role="alert">Please choose one nominee for this category.</p>}
+                    <div className="nominees">
+                      {c.nominees.map((n) => (
+                        <label key={n.id} className="nominee">
+                          <input type="radio" name={`cat-${c.id}`} value={n.id} checked={sel[c.id] === n.id} onChange={() => choose(c.id, n.id)} />
+                          <span className="card">
+                            <span className="radio" aria-hidden="true" />
+                            <span className="nname">{n.name}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                </section>
+              );
+            })}
+          </div>
+
+          <section id="review" className="review" aria-labelledby="review-heading">
+            <h2 id="review-heading" className="section-title">Review Your Ballot</h2>
+            <div className="ornament small" aria-hidden="true"><span /><i>◆</i><span /></div>
+            <p className="lead">Check your choices. You can change any of them before you confirm.</p>
+            <ol className="summary">
+              {cats.map((c) => {
+                const nominee = c.nominees.find((n) => n.id === sel[c.id]);
+                return (
+                  <li key={c.id} className={nominee ? '' : 'missing'}>
+                    <span className="s-cat">{c.name}</span>
+                    <span className="s-pick">{nominee ? nominee.name : 'Not selected yet'}</span>
+                    <a className="s-link" href={`#cat-${c.key}`}>{nominee ? 'Change' : 'Choose'}</a>
+                  </li>
+                );
+              })}
+            </ol>
+
+            <div className="submit-box">
+              <label htmlFor="code" className="code-label">Your voting code</label>
+              <input id="code" ref={codeRef} className="code-input" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
+                     placeholder="XXXXX-XXXXX" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={14}
+                     aria-describedby="code-help" />
+              <p id="code-help" className="help">Each member has one personal code. It works once.</p>
+
+              <div ref={alertRef} tabIndex={-1} className={formError ? 'notice error' : 'sr-only'} role="alert">
+                {formError}
+                {missingList.length > 0 && (
+                  <ul className="missing-links">
+                    {missingList.map((m) => (<li key={m.id}><a href={`#cat-${m.key}`}>{m.name}</a></li>))}
+                  </ul>
+                )}
+              </div>
+
+              <button type="button" className="btn-gold" onClick={submit} disabled={submitting}>
+                {submitting ? 'Submitting…' : 'Submit My Ballot'}
+              </button>
+              <p className="help center">Your ballot is only recorded once the server confirms it.</p>
+            </div>
+          </section>
+        </>
+      )}
+
+      {results && <ResultsSection results={results} />}
+    </>
+  );
+}
+
+function StatusPill({ data, loadError }: { data: BallotData | null; loadError: string }) {
+  if (!data || loadError) return null;
+  if (data.phase === 'open') {
+    return (
+      <p className="pill open"><span className="dot" aria-hidden="true" /> Voting is open{data.endsAt ? ` · closes ${fmt(data.endsAt)}` : ''}</p>
+    );
+  }
+  if (data.phase === 'closed') return <p className="pill closed">Voting is closed</p>;
+  return <p className="pill">{data.scheduled && data.startsAt ? `Opens ${fmt(data.startsAt)}` : 'Voting has not opened yet'}</p>;
+}
+
+function ResultsSection({ results }: { results: ResultsData }) {
+  return (
+    <section id="results" className="results" aria-labelledby="results-heading">
+      <h2 id="results-heading" className="section-title">The Results</h2>
+      <div className="ornament small" aria-hidden="true"><span /><i>◆</i><span /></div>
+      <p className="lead">Congratulations to our winners — {results.ballots} ballot{results.ballots === 1 ? '' : 's'} counted.</p>
+      <div className="results-grid">
+        {results.categories.map((c) => (
+          <article key={c.name} className="result-card">
+            <h3>{c.name}</h3>
+            {c.winners.length === 0 ? (
+              <p className="muted">No votes were recorded.</p>
+            ) : c.tie ? (
+              <>
+                <p className="tie-tag">It’s a tie</p>
+                <ul>{c.winners.map((w) => (<li key={w.name}>{w.name}</li>))}</ul>
+                <p className="muted">{c.winners[0].votes} votes each</p>
+              </>
+            ) : (
+              <>
+                <p className="winner">{c.winners[0].name}</p>
+                <p className="muted">{c.winners[0].votes} vote{c.winners[0].votes === 1 ? '' : 's'}</p>
+              </>
+            )}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
