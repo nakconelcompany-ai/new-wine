@@ -62,8 +62,8 @@ async function main() {
 
   console.log('\n# Categories');
   let ov = (await req('/api/admin/overview', { cookie })).json;
-  const EXPECT = ['Voice of the Year','Best Alto','Best Soprano','Best Tenor','Best Bass','Most Improved Singer','Best Soloist','Most Dedicated Member','Most Reliable Member','Most Cheerful Member','Choir Comedian (Most Funny)','Best Dressed (Male)','Best Dressed (Female)','Most Energetic Member'];
-  ok(JSON.stringify(ov.categories.map((c) => c.name)) === JSON.stringify(EXPECT), '14 predefined categories exist in the exact order (Best Dressed split into Male and Female)');
+  const EXPECT = ['Voice of the Year (Male)','Voice of the Year (Female)','Upcoming Voice (Male)','Upcoming Voice (Female)','Most Dedicated / Punctual Member','Upcoming Praise Leader (Male)','Upcoming Praise Leader (Female)','Most Compliant in Uniform (Male)','Most Compliant in Uniform (Female)','Most Energetic (Female)','Most Energetic (Male)','Power House Personality (Male)','Power House Personality (Female)','Most Funny','Best Dancer During Praise (Male)','Best Dancer During Praise (Female)','Most Active Musician'];
+  ok(JSON.stringify(ov.categories.map((c) => c.name)) === JSON.stringify(EXPECT), '17 predefined categories exist in the exact order');
   ok(ov.config.phase === 'not_open' && ov.config.resultsPublished === false, 'voting starts closed and results hidden');
 
   console.log('\n# Nominee management');
@@ -106,7 +106,7 @@ async function main() {
 
   console.log('\n# Public ballot');
   b = await req('/api/ballot');
-  ok(b.json.method === 'codes' && b.json.phase === 'open' && b.json.categories.length === 14, 'open ballot returns all 14 categories');
+  ok(b.json.method === 'codes' && b.json.phase === 'open' && b.json.categories.length === 17, 'open ballot returns all 17 categories');
   ok(JSON.stringify(b.json.categories.map((c) => c.name)) === JSON.stringify(EXPECT), 'categories are in the specified order');
   ok(!JSON.stringify(b.json).includes('Hidden Person'), 'unpublished nominees are not shown publicly');
   ok(b.json.categories.every((c) => c.nominees.length >= 2 && c.nominees.every((n) => Object.keys(n).sort().join() === 'id,name')), 'nominees are loaded from the database as name-only records (no photos)');
@@ -138,7 +138,7 @@ async function main() {
   ok(dbl.map((r) => r.status).sort().join() === '201,409', 'simultaneous double-submit: exactly one succeeds', dbl.map((r) => r.status).join());
   ok((await vote(cD, pick({ 0: second(0) }))).status === 201, 'ballot D saved');
   const counts = (await db.query('SELECT (SELECT count(*)::int FROM ballots) b, (SELECT count(*)::int FROM ballot_selections) s, (SELECT count(*)::int FROM voter_codes WHERE used_at IS NOT NULL) u')).rows[0];
-  ok(counts.b === 4 && counts.s === 56 && counts.u === 4, 'ballots, selections and used codes are consistent (4 / 56 / 4)', JSON.stringify(counts));
+  ok(counts.b === 4 && counts.s === 68 && counts.u === 4, 'ballots, selections and used codes are consistent (4 / 68 / 4)', JSON.stringify(counts));
   let dbBlocked = false;
   try {
     const ballotId = (await db.query('SELECT id FROM ballots LIMIT 1')).rows[0].id;
@@ -198,7 +198,7 @@ async function main() {
   ok(csv.status === 200 && csv.text.includes('Category') && csv.text.includes('Tied for lead') && csv.headers.get('content-disposition')?.includes('attachment'), 'CSV export works for the admin');
   ok((await req('/api/admin/voting', { method: 'POST', cookie, body: { action: 'publish_results' } })).status === 200, 'admin publishes results');
   const pub = await req('/api/results');
-  ok(pub.status === 200 && pub.json.categories.length === 14 && pub.json.categories[0].tie === true, 'published results are public and show the tie');
+  ok(pub.status === 200 && pub.json.categories.length === 17 && pub.json.categories[0].tie === true, 'published results are public and show the tie');
   ok(!JSON.stringify(pub.json).includes('Nominee 2B'), 'public results only list winners, not full tallies');
   ok((await req('/api/admin/voting', { method: 'POST', cookie, body: { action: 'open' } })).status === 409, 'voting cannot reopen while results are published');
 

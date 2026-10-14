@@ -42,10 +42,10 @@ export async function POST(req: Request) {
       const method = cfg.method;
 
       // 2. Required categories, and each must have eligible nominees.
-      const cats = await q<{ id: string; name: string }>('SELECT id, name FROM categories WHERE required = true ORDER BY display_order');
+      const cats = await q<{ id: string; name: string }>('SELECT id, name FROM categories WHERE required = true AND active ORDER BY display_order');
       if (!cats.length) throw new HttpError(503, 'The ballot is not ready yet.');
       const empty = await q<{ name: string }>(
-        `SELECT c.name FROM categories c WHERE c.required = true
+        `SELECT c.name FROM categories c WHERE c.required = true AND c.active
          AND NOT EXISTS (SELECT 1 FROM nominees n WHERE n.category_id = c.id AND ${ELIGIBLE_NOMINEE})`
       );
       if (empty.length) throw new HttpError(409, 'The ballot is being updated. Please try again shortly.');

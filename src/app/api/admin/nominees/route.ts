@@ -25,9 +25,10 @@ export async function POST(req: Request) {
     try {
       const rows = await query<{ id: string }>(
         `INSERT INTO nominees (category_id, display_name, name_key, published)
-         VALUES ($1, $2, $3, $4) RETURNING id`,
+         SELECT c.id, $2::text, $3::text, $4::boolean FROM categories c WHERE c.id = $1::uuid AND c.active RETURNING id`,
         [b.categoryId, b.name, nameKey(b.name), b.published ?? false]
       );
+      if (!rows.length) throw new HttpError(400, 'Please choose a valid category.');
       revalidatePath('/');
       return json({ ok: true, id: rows[0].id }, 201);
     } catch (e) {

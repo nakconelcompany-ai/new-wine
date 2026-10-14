@@ -25,7 +25,7 @@ export async function GET() {
     const rows = await query<{ cid: string; ckey: string; cname: string; ord: number; nid: string; nname: string }>(
       `SELECT c.id AS cid, c.key AS ckey, c.name AS cname, c.display_order AS ord, n.id AS nid, n.display_name AS nname
        FROM categories c JOIN nominees n ON n.category_id = c.id
-       WHERE c.required = true AND ${ELIGIBLE_NOMINEE}
+       WHERE c.required = true AND c.active AND ${ELIGIBLE_NOMINEE}
        ORDER BY c.display_order, n.display_name`
     );
     const cats = new Map<string, { id: string; key: string; name: string; nominees: { id: string; name: string }[] }>();

@@ -13,14 +13,14 @@ export async function GET(req: Request) {
       getConfig(),
       readiness(),
       ballotCount(),
-      query<{ id: string; name: string; display_order: number }>('SELECT id, name, display_order FROM categories ORDER BY display_order'),
+      query<{ id: string; name: string; display_order: number }>('SELECT id, name, display_order FROM categories WHERE active ORDER BY display_order'),
       query<{ id: string; category_id: string; display_name: string; published: boolean; archived_at: Date | null }>(
-        'SELECT id, category_id, display_name, published, archived_at FROM nominees ORDER BY display_name'
+        'SELECT n.id, n.category_id, n.display_name, n.published, n.archived_at FROM nominees n JOIN categories c ON c.id = n.category_id AND c.active ORDER BY n.display_name'
       ),
       query<{ total: number; used: number; revoked: number }>(
         `SELECT count(*)::int AS total, count(used_at)::int AS used, count(*) FILTER (WHERE status = 'revoked')::int AS revoked FROM voter_codes WHERE kind = 'code'`
       ),
-      query<{ category_id: string; votes: number }>('SELECT category_id, count(*)::int AS votes FROM ballot_selections GROUP BY category_id'),
+      query<{ category_id: string; votes: number }>('SELECT bs.category_id, count(*)::int AS votes FROM ballot_selections bs JOIN categories c ON c.id = bs.category_id AND c.active GROUP BY bs.category_id'),
     ]);
     const { phase, scheduled } = effectivePhase(cfg);
     const votesByCat = new Map(activity.map((a) => [a.category_id, a.votes]));

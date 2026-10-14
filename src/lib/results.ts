@@ -20,6 +20,7 @@ export async function tally(): Promise<CategoryTally[]> {
      FROM categories c
      LEFT JOIN nominees n ON n.category_id = c.id
      LEFT JOIN ballot_selections bs ON bs.nominee_id = n.id
+     WHERE c.active
      GROUP BY c.id, n.id
      ORDER BY c.display_order, count(bs.id) DESC, n.display_name`
   );
@@ -49,5 +50,8 @@ export async function tally(): Promise<CategoryTally[]> {
 }
 
 export async function ballotCount(): Promise<number> {
-  return (await query<{ n: number }>('SELECT count(*)::int AS n FROM ballots'))[0].n;
+  // Only ballots that voted in a currently active category (ignores leftovers from an earlier category list).
+  return (await query<{ n: number }>(
+    `SELECT count(DISTINCT bs.ballot_id)::int AS n FROM ballot_selections bs JOIN categories c ON c.id = bs.category_id AND c.active`
+  ))[0].n;
 }

@@ -31,7 +31,7 @@ export const ELIGIBLE_NOMINEE = 'n.published = true AND n.archived_at IS NULL';
 export async function categoriesMissingNominees(): Promise<{ id: string; name: string }[]> {
   return query<{ id: string; name: string }>(
     `SELECT c.id, c.name FROM categories c
-     WHERE c.required = true
+     WHERE c.required = true AND c.active
        AND NOT EXISTS (SELECT 1 FROM nominees n WHERE n.category_id = c.id AND ${ELIGIBLE_NOMINEE})
      ORDER BY c.display_order`
   );
@@ -45,7 +45,7 @@ export async function readiness() {
       `SELECT count(*)::int AS n FROM voter_codes
        WHERE kind = 'code' AND status = 'active' AND used_at IS NULL AND (expires_at IS NULL OR expires_at > now())`
     ),
-    query<{ n: number }>('SELECT count(*)::int AS n FROM categories WHERE required = true'),
+    query<{ n: number }>('SELECT count(*)::int AS n FROM categories WHERE required = true AND active'),
   ]);
   const unusedCodes = codes[0].n;
   return {
