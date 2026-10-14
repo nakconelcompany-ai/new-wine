@@ -18,7 +18,7 @@ export async function GET(req: Request) {
         'SELECT id, category_id, display_name, published, archived_at FROM nominees ORDER BY display_name'
       ),
       query<{ total: number; used: number; revoked: number }>(
-        `SELECT count(*)::int AS total, count(used_at)::int AS used, count(*) FILTER (WHERE status = 'revoked')::int AS revoked FROM voter_codes`
+        `SELECT count(*)::int AS total, count(used_at)::int AS used, count(*) FILTER (WHERE status = 'revoked')::int AS revoked FROM voter_codes WHERE kind = 'code'`
       ),
       query<{ category_id: string; votes: number }>('SELECT category_id, count(*)::int AS votes FROM ballot_selections GROUP BY category_id'),
     ]);
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     const votesByCat = new Map(activity.map((a) => [a.category_id, a.votes]));
     return json({
       config: {
-        status: cfg.status, phase, scheduled,
+        status: cfg.status, method: cfg.method, phase, scheduled,
         startsAt: cfg.starts_at, endsAt: cfg.ends_at,
         resultsPublished: cfg.results_published, resultsPublishedAt: cfg.results_published_at,
       },

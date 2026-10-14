@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic';
 const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('check') }),
   z.object({ action: z.literal('open') }),
+  z.object({ action: z.literal('set_method'), method: z.enum(['codes', 'open']) }),
   z.object({ action: z.literal('close') }),
   z.object({
     action: z.literal('schedule'),
@@ -37,11 +38,15 @@ export async function POST(req: Request) {
         if (r.categoriesMissingNominees.length) {
           throw new HttpError(409, 'Voting cannot open until every category has at least one published nominee.', undefined, { readiness: r });
         }
-        if (r.unusedCodes < 1) throw new HttpError(409, 'Generate voting codes before opening voting.', undefined, { readiness: r });
+        if (cfg.method === 'codes' && r.unusedCodes < 1) throw new HttpError(409, 'Generate voting codes before opening voting.', undefined, { readiness: r });
         if (cfg.ends_at && cfg.ends_at <= new Date()) throw new HttpError(409, 'The voting end time has already passed. Update the schedule first.');
         await query(`UPDATE voting_config SET status = 'open', updated_at = now() WHERE id = 1`);
         break;
       }
+      case 'set_method':
+        await query('UPDATE voting_config SET method = $1, updated_at = now() WHERE id = 1', [b.method]);
+        break;
+
       case 'close':
         await query(`UPDATE voting_config SET status = 'closed', updated_at = now() WHERE id = 1`);
         break;

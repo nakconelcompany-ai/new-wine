@@ -3,8 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 type Overview = {
-  config: { status: string; phase: 'not_open' | 'open' | 'closed'; scheduled: boolean; startsAt: string | null; endsAt: string | null; resultsPublished: boolean; resultsPublishedAt: string | null };
-  readiness: { categoriesMissingNominees: string[]; unusedCodes: number; requiredCategories: number; ready: boolean };
+  config: { status: string; method: 'codes' | 'open'; phase: 'not_open' | 'open' | 'closed'; scheduled: boolean; startsAt: string | null; endsAt: string | null; resultsPublished: boolean; resultsPublishedAt: string | null };
+  readiness: { method: 'codes' | 'open'; categoriesMissingNominees: string[]; unusedCodes: number; requiredCategories: number; ready: boolean };
   stats: { categories: number; publishedNominees: number; ballots: number; codes: { total: number; used: number; revoked: number } };
   categories: { id: string; name: string; eligibleNominees: number; votesRecorded: number }[];
   nominees: { id: string; categoryId: string; name: string; published: boolean; archived: boolean }[];
@@ -215,8 +215,22 @@ function VotingTab({ ov, run }: { ov: Overview; run: Run }) {
   const [end, setEnd] = useState(toLocalInput(config.endsAt));
   const post = (body: object, okText: string) => run(() => api('/api/admin/voting', 'POST', body), okText);
 
+  const setMethod = (m: 'codes' | 'open') => {
+    if (m === config.method) return;
+    if (m === 'open' && !confirm('Switch to open voting? Anyone with the link will be able to vote, once per device. A person could vote again from another phone or a private tab.')) return;
+    post({ action: 'set_method', method: m }, m === 'open' ? 'Open voting is on. No code is asked for.' : 'Personal voting codes are required again.');
+  };
+
   return (
     <>
+      <div className="adm-card">
+        <h2 className="adm-h2">Who can vote</h2>
+        <label className="check-row"><input type="radio" name="method" checked={config.method === 'codes'} onChange={() => setMethod('codes')} /> Personal voting codes (recommended)</label>
+        <p className="muted">Each member gets a one-time code. The strongest protection against repeat voting.</p>
+        <label className="check-row"><input type="radio" name="method" checked={config.method === 'open'} onChange={() => setMethod('open')} /> Anyone with the link, one vote per device</label>
+        <p className="muted">No code on the voting page. Easier for voters, but a person can vote again from another phone or a private browser tab.</p>
+      </div>
+
       <div className="adm-card">
         <h2 className="adm-h2">Ballot readiness</h2>
         <ul className="checks">
@@ -225,9 +239,13 @@ function VotingTab({ ov, run }: { ov: Overview; run: Run }) {
               ? `All ${readiness.requiredCategories} categories have published nominees`
               : `Missing nominees: ${readiness.categoriesMissingNominees.join(', ')}`}
           </li>
-          <li className={readiness.unusedCodes > 0 ? 'good' : 'bad'}>
-            {readiness.unusedCodes > 0 ? `${readiness.unusedCodes} unused voting codes available` : 'No unused voting codes — generate some in the Codes tab'}
-          </li>
+          {config.method === 'codes' ? (
+            <li className={readiness.unusedCodes > 0 ? 'good' : 'bad'}>
+              {readiness.unusedCodes > 0 ? `${readiness.unusedCodes} unused voting codes available` : 'No unused voting codes — generate some in the Codes tab'}
+            </li>
+          ) : (
+            <li className="good">Open voting: no codes needed (one vote per device)</li>
+          )}
         </ul>
         <p><strong>Status:</strong> <span className={`badge ${config.phase}`}>{phaseLabel(config)}</span></p>
         <div className="btn-row">
@@ -313,6 +331,7 @@ function CodesTab({ ov, refresh, setMsg }: { ov: Overview; refresh: () => Promis
 
   return (
     <>
+      {ov.config.method === 'open' && <p className="notice">Open voting is on, so voters are not asked for a code right now. Switch back in the Voting tab to use codes.</p>}
       <form className="adm-card" onSubmit={generate}>
         <h2 className="adm-h2">Generate voting codes</h2>
         <p className="muted">One code per voter. Codes are stored as secure hashes, so they can’t be viewed again after this screen.</p>

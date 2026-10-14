@@ -20,21 +20,26 @@ None of these use the `NEXT_PUBLIC_` prefix, so none can reach the browser.
 * Migrations are plain SQL files in `migrations/`. Each runs once, in a transaction, and is recorded in a `_migrations` table. They only **add** structure — they never drop or reset data.
 * `npm run build` runs `scripts/predeploy.mjs`, which applies migrations and the idempotent category seed **only on Vercel Production builds** (`VERCEL_ENV=production`). Preview and local builds skip it, so previews never touch production data.
 * To run by hand (computer required): `DATABASE_URL=... npm run db:setup`.
-* Running setup repeatedly is safe: the 13 categories are upserted by a stable key, never duplicated.
+* Running setup repeatedly is safe: the 14 categories are upserted by a stable key, never duplicated.
 
 ## 3. First-time deployment
 
 1. Vercel → **Add New → Project** → import `nakconelcompany-ai/new-wine`. Framework is detected as Next.js; leave build settings alone.
 2. Add the five variables above for **Production**.
-3. Deploy. The build creates the tables and seeds the 13 categories.
+3. Deploy. The build creates the tables and seeds the 14 categories.
 4. Open `/admin`, sign in, then **Account → Change password** straight away.
 5. **Nominees** tab → add nominees for every category (publish them).
 6. **Codes** tab → generate one code per voter. Save/copy/download them immediately — they are shown once and stored only as hashes.
-7. **Voting** tab → check readiness → optionally set start/end times → **Open voting**.
+7. **Voting** tab → choose **Who can vote** (personal codes, or open link with one vote per device) → check readiness → optionally set start/end times → **Open voting**.
 8. When finished: **Close voting** → review the **Results** tab → export CSV → **Publish results** when ready.
+
+## 3b. Category posters
+
+Each category can show a poster image instead of a text title. Put the image in `public/categories/<category-key>.jpg` and add it to `src/lib/banners.ts`. The poster is shown full width as a 16:9 slice, so keep the title in the vertical middle of a portrait image (the same layout as the Best Dressed Male poster). Categories without a poster show a normal text heading. Keys: `voice-of-the-year`, `best-alto`, `best-soprano`, `best-tenor`, `best-bass`, `most-improved-singer`, `best-soloist`, `most-dedicated-member`, `most-reliable-member`, `most-cheerful-member`, `choir-comedian`, `best-dressed-male`, `best-dressed-female`, `most-energetic-member`.
 
 ## 4. How the rules are enforced
 
+* Voting method is chosen in the dashboard. **Personal codes** (default) is the strongest. **Open link** needs no code and allows one vote per device (cookie), so a person can vote again from another phone or a private tab.
 * One ballot per code: the code row is locked inside the submission transaction, `ballots.voter_code_id` is `UNIQUE`, and the code is marked used in the same transaction.
 * A nominee can only be chosen in its own category: a composite foreign key on `ballot_selections(nominee_id, category_id)` enforces it in the database, besides the server checks.
 * One selection per category per ballot: `UNIQUE (ballot_id, category_id)`.

@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   try {
     await requireAdmin(req);
     const rows = await query<{ id: string; label: string | null; status: string; used_at: Date | null; created_at: Date }>(
-      'SELECT id, label, status, used_at, created_at FROM voter_codes ORDER BY created_at DESC, id LIMIT 2000'
+      "SELECT id, label, status, used_at, created_at FROM voter_codes WHERE kind = 'code' ORDER BY created_at DESC, id LIMIT 2000"
     );
     return json({ codes: rows.map((r) => ({ id: r.id, label: r.label, status: r.status, usedAt: r.used_at, createdAt: r.created_at })) });
   } catch (e) {

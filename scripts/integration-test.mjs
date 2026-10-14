@@ -62,8 +62,8 @@ async function main() {
 
   console.log('\n# Categories');
   let ov = (await req('/api/admin/overview', { cookie })).json;
-  const EXPECT = ['Voice of the Year','Best Alto','Best Soprano','Best Tenor','Best Bass','Most Improved Singer','Best Soloist','Most Dedicated Member','Most Reliable Member','Most Cheerful Member','Choir Comedian (Most Funny)','Best Dressed (Most Stylish)','Most Energetic Member'];
-  ok(JSON.stringify(ov.categories.map((c) => c.name)) === JSON.stringify(EXPECT), '13 predefined categories exist in the exact order');
+  const EXPECT = ['Voice of the Year','Best Alto','Best Soprano','Best Tenor','Best Bass','Most Improved Singer','Best Soloist','Most Dedicated Member','Most Reliable Member','Most Cheerful Member','Choir Comedian (Most Funny)','Best Dressed (Male)','Best Dressed (Female)','Most Energetic Member'];
+  ok(JSON.stringify(ov.categories.map((c) => c.name)) === JSON.stringify(EXPECT), '14 predefined categories exist in the exact order (Best Dressed split into Male and Female)');
   ok(ov.config.phase === 'not_open' && ov.config.resultsPublished === false, 'voting starts closed and results hidden');
 
   console.log('\n# Nominee management');
@@ -106,7 +106,7 @@ async function main() {
 
   console.log('\n# Public ballot');
   b = await req('/api/ballot');
-  ok(b.json.phase === 'open' && b.json.categories.length === 13, 'open ballot returns all 13 categories');
+  ok(b.json.method === 'codes' && b.json.phase === 'open' && b.json.categories.length === 14, 'open ballot returns all 14 categories');
   ok(JSON.stringify(b.json.categories.map((c) => c.name)) === JSON.stringify(EXPECT), 'categories are in the specified order');
   ok(!JSON.stringify(b.json).includes('Hidden Person'), 'unpublished nominees are not shown publicly');
   ok(b.json.categories.every((c) => c.nominees.length >= 2 && c.nominees.every((n) => Object.keys(n).sort().join() === 'id,name')), 'nominees are loaded from the database as name-only records (no photos)');
@@ -138,7 +138,7 @@ async function main() {
   ok(dbl.map((r) => r.status).sort().join() === '201,409', 'simultaneous double-submit: exactly one succeeds', dbl.map((r) => r.status).join());
   ok((await vote(cD, pick({ 0: second(0) }))).status === 201, 'ballot D saved');
   const counts = (await db.query('SELECT (SELECT count(*)::int FROM ballots) b, (SELECT count(*)::int FROM ballot_selections) s, (SELECT count(*)::int FROM voter_codes WHERE used_at IS NOT NULL) u')).rows[0];
-  ok(counts.b === 4 && counts.s === 52 && counts.u === 4, 'ballots, selections and used codes are consistent (4 / 52 / 4)', JSON.stringify(counts));
+  ok(counts.b === 4 && counts.s === 56 && counts.u === 4, 'ballots, selections and used codes are consistent (4 / 56 / 4)', JSON.stringify(counts));
   let dbBlocked = false;
   try {
     const ballotId = (await db.query('SELECT id FROM ballots LIMIT 1')).rows[0].id;
@@ -198,7 +198,7 @@ async function main() {
   ok(csv.status === 200 && csv.text.includes('Category') && csv.text.includes('Tied for lead') && csv.headers.get('content-disposition')?.includes('attachment'), 'CSV export works for the admin');
   ok((await req('/api/admin/voting', { method: 'POST', cookie, body: { action: 'publish_results' } })).status === 200, 'admin publishes results');
   const pub = await req('/api/results');
-  ok(pub.status === 200 && pub.json.categories.length === 13 && pub.json.categories[0].tie === true, 'published results are public and show the tie');
+  ok(pub.status === 200 && pub.json.categories.length === 14 && pub.json.categories[0].tie === true, 'published results are public and show the tie');
   ok(!JSON.stringify(pub.json).includes('Nominee 2B'), 'public results only list winners, not full tallies');
   ok((await req('/api/admin/voting', { method: 'POST', cookie, body: { action: 'open' } })).status === 409, 'voting cannot reopen while results are published');
 
@@ -230,6 +230,25 @@ async function main() {
   let guess429 = false;
   for (let i = 0; i < 12; i++) if ((await vote(`AAAAA-AAAA${i % 9 + 2}`, sel2, { ip: '203.0.113.77' })).status === 429) guess429 = true;
   ok(guess429, 'repeated wrong voting codes are rate-limited');
+  ok((await vote(undefined, sel2, { ip: '203.0.113.90' })).status === 403, 'codes mode: a ballot with no code is rejected');
+
+  console.log('\n# Open voting mode (no code, one vote per device)');
+  const statsBefore = (await req('/api/admin/overview', { cookie: cookie2 })).json.stats;
+  ok((await req('/api/admin/voting', { method: 'POST', cookie: cookie2, body: { action: 'set_method', method: 'open' } })).status === 200, 'admin switches to open voting');
+  ok((await req('/api/ballot')).json.method === 'open', 'public ballot reports open mode (page hides the code box)');
+  const o1 = await vote(undefined, sel2, { ip: '203.0.113.88' });
+  ok(o1.status === 201, 'open mode: ballot accepted without a code');
+  const devCookie = (o1.headers.getSetCookie()[0] || '').split(';')[0];
+  ok(/^nw_device=[a-f0-9]{64}$/.test(devCookie) && /HttpOnly/i.test(o1.headers.getSetCookie()[0]), 'open mode: device cookie is HttpOnly');
+  const o2 = await vote(undefined, sel2, { ip: '203.0.113.88', cookie: devCookie });
+  ok(o2.status === 409 && /already voted/i.test(o2.json.error), 'open mode: same device cannot vote twice');
+  const o3 = await Promise.all([vote(undefined, sel2, { ip: '203.0.113.89' }), vote(undefined, sel2, { ip: '203.0.113.89', cookie: devCookie })]);
+  ok(o3.map((r) => r.status).includes(409), 'open mode: the voted device is still blocked on retry');
+  const statsAfter = (await req('/api/admin/overview', { cookie: cookie2 })).json.stats;
+  ok(statsAfter.codes.total === statsBefore.codes.total && statsAfter.codes.used === statsBefore.codes.used, 'device votes do not appear as voting codes');
+  const codeListAfter = (await req('/api/admin/codes', { cookie: cookie2 })).json.codes;
+  ok(codeListAfter.every((c) => c.label !== 'open-link'), 'codes list hides automatic device entries');
+  ok((await req('/api/admin/voting', { method: 'POST', cookie: cookie2, body: { action: 'set_method', method: 'codes' } })).status === 200, 'admin switches back to personal codes');
 
   console.log(`\n${pass} passed, ${fail} failed`);
   await db.end();

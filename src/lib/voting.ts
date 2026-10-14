@@ -2,6 +2,7 @@ import { query } from './db';
 
 export type VotingRow = {
   status: 'draft' | 'open' | 'closed';
+  method: 'codes' | 'open';
   starts_at: Date | null;
   ends_at: Date | null;
   results_published: boolean;
@@ -11,7 +12,7 @@ export type VotingRow = {
 export type Phase = 'not_open' | 'open' | 'closed';
 
 export async function getConfig(q: typeof query = query): Promise<VotingRow> {
-  const rows = await q<VotingRow>('SELECT status, starts_at, ends_at, results_published, results_published_at FROM voting_config WHERE id = 1');
+  const rows = await q<VotingRow>('SELECT status, method, starts_at, ends_at, results_published, results_published_at FROM voting_config WHERE id = 1');
   return rows[0];
 }
 
@@ -37,18 +38,21 @@ export async function categoriesMissingNominees(): Promise<{ id: string; name: s
 }
 
 export async function readiness() {
-  const [missing, codes, cats] = await Promise.all([
+  const [cfg, missing, codes, cats] = await Promise.all([
+    getConfig(),
     categoriesMissingNominees(),
     query<{ n: number }>(
-      `SELECT count(*)::int AS n FROM voter_codes WHERE status = 'active' AND used_at IS NULL AND (expires_at IS NULL OR expires_at > now())`
+      `SELECT count(*)::int AS n FROM voter_codes
+       WHERE kind = 'code' AND status = 'active' AND used_at IS NULL AND (expires_at IS NULL OR expires_at > now())`
     ),
     query<{ n: number }>('SELECT count(*)::int AS n FROM categories WHERE required = true'),
   ]);
   const unusedCodes = codes[0].n;
   return {
+    method: cfg.method,
     categoriesMissingNominees: missing.map((m) => m.name),
     unusedCodes,
     requiredCategories: cats[0].n,
-    ready: missing.length === 0 && unusedCodes > 0 && cats[0].n > 0,
+    ready: missing.length === 0 && (cfg.method === 'open' || unusedCodes > 0) && cats[0].n > 0,
   };
 }

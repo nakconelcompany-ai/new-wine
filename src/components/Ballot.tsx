@@ -1,11 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BANNERS } from '@/lib/banners';
 
 type Nominee = { id: string; name: string };
 type Category = { id: string; key: string; name: string; nominees: Nominee[] };
 type BallotData = {
   phase: 'not_open' | 'open' | 'closed' | 'unavailable';
+  method: 'codes' | 'open';
   scheduled: boolean;
   startsAt: string | null;
   endsAt: string | null;
@@ -18,6 +20,7 @@ type ResultsData = {
 };
 
 const STORE = 'nw-selections-v1';
+const VOTED = 'nw-voted-v1';
 const fmt = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
 export default function Ballot() {
@@ -31,6 +34,8 @@ export default function Ballot() {
   const [missingList, setMissingList] = useState<Category[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [alreadyVoted, setAlreadyVoted] = useState(false);
+  const [badBanners, setBadBanners] = useState<Set<string>>(new Set());
   const busy = useRef(false);
   const alertRef = useRef<HTMLDivElement>(null);
   const codeRef = useRef<HTMLInputElement>(null);
@@ -64,6 +69,7 @@ export default function Ballot() {
   }, []);
 
   useEffect(() => {
+    try { if (localStorage.getItem(VOTED) === '1') setAlreadyVoted(true); } catch { /* ignore */ }
     load();
     const onVis = () => { if (document.visibilityState === 'visible') load(); };
     document.addEventListener('visibilitychange', onVis);
@@ -76,6 +82,7 @@ export default function Ballot() {
 
   const cats = useMemo(() => data?.categories ?? [], [data]);
   const completed = cats.filter((c) => sel[c.id]).length;
+  const openMode = data?.method === 'open';
 
   function choose(catId: string, nomId: string) {
     setSel((p) => ({ ...p, [catId]: nomId })); // radio semantics: one value per category replaces the previous
@@ -89,6 +96,11 @@ export default function Ballot() {
     setTimeout(() => alertRef.current?.focus(), 0);
   }
 
+  function markVoted() {
+    try { localStorage.setItem(VOTED, '1'); } catch { /* ignore */ }
+    try { sessionStorage.removeItem(STORE); } catch { /* ignore */ }
+  }
+
   async function submit() {
     if (busy.current) return; // blocks double-clicks
     const missing = cats.filter((c) => !sel[c.id]);
@@ -96,7 +108,7 @@ export default function Ballot() {
       showProblem(`Every category needs one selection — ${missing.length} still to go.`, missing);
       return;
     }
-    if (!code.trim()) {
+    if (!openMode && !code.trim()) {
       setFormError('Enter your personal voting code to submit your ballot.');
       setMissingList([]);
       setTimeout(() => codeRef.current?.focus(), 0);
@@ -110,12 +122,17 @@ export default function Ballot() {
       const res = await fetch('/api/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, selections: sel }),
+        body: JSON.stringify({ code: openMode ? undefined : code, selections: sel }),
       });
       const body = await res.json().catch(() => ({}));
       if (res.status === 201) {
-        try { sessionStorage.removeItem(STORE); } catch { /* ignore */ }
+        if (openMode) markVoted();
+        else { try { sessionStorage.removeItem(STORE); } catch { /* ignore */ } }
         setDone(true);
+        setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+      } else if (res.status === 409 && openMode && /already voted/i.test(body.error || '')) {
+        markVoted();
+        setAlreadyVoted(true);
         setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
       } else {
         if (Array.isArray(body.missing)) {
@@ -135,15 +152,15 @@ export default function Ballot() {
     }
   }
 
+  const showAlreadyVoted = data?.phase === 'open' && openMode && alreadyVoted && !done;
+
   return (
     <>
       <section id="vote" className="vote-intro" ref={topRef} aria-labelledby="vote-heading">
         <h2 id="vote-heading" className="section-title">Celebrate Your Favourites</h2>
         <div className="ornament small" aria-hidden="true"><span /><i>◆</i><span /></div>
-        <p className="lead">
-          Choose one nominee in each category, then review your choices at the bottom of the page before you submit.
-        </p>
-        <StatusPill data={data} loadError={loadError} />
+        <p className="lead">We are using this opportunity to celebrate those who have put in the hard work.</p>
+        <p className="once-note">You can only vote once, so take your time and choose carefully.</p>
       </section>
 
       {loadError && <p className="notice error" role="alert">{loadError}</p>}
@@ -176,11 +193,19 @@ export default function Ballot() {
         <div className="panel center success" role="status">
           <div className="check" aria-hidden="true">✓</div>
           <h3>Thank you for voting!</h3>
-          <p>Your ballot has been recorded. Your voting code has now been used and cannot be used again.</p>
+          <p>Your ballot has been recorded.{openMode ? '' : ' Your voting code has now been used and cannot be used again.'}</p>
         </div>
       )}
 
-      {data?.phase === 'open' && !done && cats.length > 0 && (
+      {showAlreadyVoted && (
+        <div className="panel center success" role="status">
+          <div className="check" aria-hidden="true">✓</div>
+          <h3>You have already voted</h3>
+          <p>Thank you for taking part. Each person can only vote once.</p>
+        </div>
+      )}
+
+      {data?.phase === 'open' && !done && !showAlreadyVoted && cats.length > 0 && (
         <>
           <nav className="progress" aria-label="Ballot progress">
             <div className="progress-top">
@@ -209,13 +234,20 @@ export default function Ballot() {
           <div className="categories">
             {cats.map((c, i) => {
               const err = errorCats.has(c.id);
+              const banner = BANNERS[c.key] && !badBanners.has(c.key) ? BANNERS[c.key] : null;
               return (
-                <section key={c.id} id={`cat-${c.key}`} className={`category ${err ? 'has-error' : ''}`} aria-labelledby={`h-${c.key}`}>
+                <section key={c.id} id={`cat-${c.key}`} className={`category ${err ? 'has-error' : ''} ${banner ? 'with-banner' : ''}`} aria-labelledby={`h-${c.key}`}>
                   <fieldset aria-describedby={err ? `e-${c.key}` : undefined}>
                     <legend>
                       <span className="cat-num">Category {i + 1} of {cats.length}</span>
                       <span id={`h-${c.key}`} className="cat-name">{c.name}</span>
                     </legend>
+                    {banner && (
+                      <div className="cat-banner">
+                        <img src={banner} alt="" loading="lazy" decoding="async"
+                             onError={() => setBadBanners((p) => new Set(p).add(c.key))} />
+                      </div>
+                    )}
                     {err && <p id={`e-${c.key}`} className="cat-error" role="alert">Please choose one nominee for this category.</p>}
                     <div className="nominees">
                       {c.nominees.map((n) => (
@@ -234,29 +266,16 @@ export default function Ballot() {
             })}
           </div>
 
-          <section id="review" className="review" aria-labelledby="review-heading">
-            <h2 id="review-heading" className="section-title">Review Your Ballot</h2>
-            <div className="ornament small" aria-hidden="true"><span /><i>◆</i><span /></div>
-            <p className="lead">Check your choices. You can change any of them before you confirm.</p>
-            <ol className="summary">
-              {cats.map((c) => {
-                const nominee = c.nominees.find((n) => n.id === sel[c.id]);
-                return (
-                  <li key={c.id} className={nominee ? '' : 'missing'}>
-                    <span className="s-cat">{c.name}</span>
-                    <span className="s-pick">{nominee ? nominee.name : 'Not selected yet'}</span>
-                    <a className="s-link" href={`#cat-${c.key}`}>{nominee ? 'Change' : 'Choose'}</a>
-                  </li>
-                );
-              })}
-            </ol>
-
+          <section id="submit" className="review" aria-labelledby="submit-heading">
+            <h2 id="submit-heading" className="sr-only">Submit your ballot</h2>
             <div className="submit-box">
-              <label htmlFor="code" className="code-label">Your voting code</label>
-              <input id="code" ref={codeRef} className="code-input" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
-                     placeholder="XXXXX-XXXXX" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={14}
-                     aria-describedby="code-help" />
-              <p id="code-help" className="help">Each member has one personal code. It works once.</p>
+              {!openMode && (
+                <>
+                  <label htmlFor="code" className="code-label">Your voting code</label>
+                  <input id="code" ref={codeRef} className="code-input" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
+                         placeholder="XXXXX-XXXXX" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={14} />
+                </>
+              )}
 
               <div ref={alertRef} tabIndex={-1} className={formError ? 'notice error' : 'sr-only'} role="alert">
                 {formError}
@@ -270,7 +289,6 @@ export default function Ballot() {
               <button type="button" className="btn-gold" onClick={submit} disabled={submitting}>
                 {submitting ? 'Submitting…' : 'Submit My Ballot'}
               </button>
-              <p className="help center">Your ballot is only recorded once the server confirms it.</p>
             </div>
           </section>
         </>
@@ -279,17 +297,6 @@ export default function Ballot() {
       {results && <ResultsSection results={results} />}
     </>
   );
-}
-
-function StatusPill({ data, loadError }: { data: BallotData | null; loadError: string }) {
-  if (!data || loadError) return null;
-  if (data.phase === 'open') {
-    return (
-      <p className="pill open"><span className="dot" aria-hidden="true" /> Voting is open{data.endsAt ? ` · closes ${fmt(data.endsAt)}` : ''}</p>
-    );
-  }
-  if (data.phase === 'closed') return <p className="pill closed">Voting is closed</p>;
-  return <p className="pill">{data.scheduled && data.startsAt ? `Opens ${fmt(data.startsAt)}` : 'Voting has not opened yet'}</p>;
 }
 
 function ResultsSection({ results }: { results: ResultsData }) {

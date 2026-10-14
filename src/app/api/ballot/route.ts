@@ -14,6 +14,7 @@ export async function GET() {
       startsAt: cfg.starts_at,
       endsAt: cfg.ends_at,
       resultsPublished: cfg.results_published,
+      method: cfg.method as string,
     };
     if (phase !== 'open') return json(base);
 

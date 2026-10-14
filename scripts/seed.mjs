@@ -1,4 +1,4 @@
-// Idempotent seed: the 13 predefined categories. Safe to run any number of times.
+// Idempotent seed: the predefined categories. Safe to run any number of times.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
@@ -15,7 +15,8 @@ export const CATEGORIES = [
   ['most-reliable-member', 'Most Reliable Member'],
   ['most-cheerful-member', 'Most Cheerful Member'],
   ['choir-comedian', 'Choir Comedian (Most Funny)'],
-  ['best-dressed', 'Best Dressed (Most Stylish)'],
+  ['best-dressed-male', 'Best Dressed (Male)'],
+  ['best-dressed-female', 'Best Dressed (Female)'],
   ['most-energetic-member', 'Most Energetic Member'],
 ];
 
