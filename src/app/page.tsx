@@ -8,7 +8,10 @@ export default function Home() {
         <div className="notes" aria-hidden="true">
           <span>♪</span><span>♫</span><span>♩</span><span>♬</span><span>♪</span><span>♫</span>
         </div>
-        <p className="eyebrow rise r1">New Wine Choir Awards</p>
+        <p className="eyebrow rise r1">
+          <span className="stars" aria-hidden="true">★★★★★</span>
+          New Wine Choir Awards
+        </p>
         <h1 className="hero-title rise r2">Beyond the Harmony</h1>
         <div className="ornament rise r3" aria-hidden="true"><span /><i>◆</i><span /></div>
         <p className="tagline rise r4">
