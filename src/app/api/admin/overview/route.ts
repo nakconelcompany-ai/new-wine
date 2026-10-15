@@ -22,12 +22,11 @@ export async function GET(req: Request) {
       ),
       query<{ category_id: string; votes: number }>('SELECT bs.category_id, count(*)::int AS votes FROM ballot_selections bs JOIN categories c ON c.id = bs.category_id AND c.active GROUP BY bs.category_id'),
     ]);
-    const { phase, scheduled } = effectivePhase(cfg);
+    const { phase } = effectivePhase(cfg);
     const votesByCat = new Map(activity.map((a) => [a.category_id, a.votes]));
     return json({
       config: {
-        status: cfg.status, method: cfg.method, phase, scheduled,
-        startsAt: cfg.starts_at, endsAt: cfg.ends_at,
+        status: cfg.status, method: cfg.method, phase,
         resultsPublished: cfg.results_published, resultsPublishedAt: cfg.results_published_at,
       },
       readiness: ready,

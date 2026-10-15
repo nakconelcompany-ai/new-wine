@@ -1,18 +1,24 @@
 :root {
   /* Rich Velvet Wine & Obsidian Black Luxury Palette */
-  --bg: #090204;
-  --bg-wine: #1c0409;
-  --bg-2: #050103;
-  --surface: rgba(22, 5, 11, 0.82);
-  --surface-2: rgba(32, 8, 17, 0.88);
-  --surface-elevated: rgba(46, 11, 24, 0.92);
+  --bg: #4a0a1e;
+  --bg-wine: #6b0f2c;
+  --bg-2: #2a0613;
+  --surface: rgba(41, 8, 20, 0.82);
+  --surface-2: rgba(56, 11, 30, 0.88);
+  --surface-elevated: rgba(77, 15, 40, 0.92);
 
   /* Regal Jewels & Velvet Wine Accents */
-  --wine-deep: #420814;
-  --wine-vibrant: #7a1226;
-  --wine-crimson: #a31935;
-  --wine-bright: #cb2447;
-  --wine-glow: rgba(184, 29, 61, 0.35);
+  --wine-deep: #5c0b24;
+  --wine-vibrant: #9b1a3e;
+  --wine-crimson: #c42151;
+  --wine-bright: #e63a6a;
+  --wine-glow: rgba(230, 58, 106, 0.40);
+
+  /* Blush rose-gold accent (pairs wine with gold) */
+  --rose: #f7c3b8;
+  --rose-deep: #e8979a;
+  --rose-soft: rgba(247, 195, 184, 0.14);
+  --rose-border: rgba(247, 195, 184, 0.38);
 
   /* 24k Royal Champagne & Polished Gold */
   --gold-light: #fff5de;
@@ -54,11 +60,11 @@ body {
   line-height: 1.65;
   /* Seamless, radiant wine-and-black ambient mesh with ZERO harsh lines */
   background-image:
-    radial-gradient(1200px 750px at 50% -8%, rgba(163, 25, 53, 0.45), transparent 70%),
-    radial-gradient(1000px 800px at 92% 18%, rgba(122, 18, 38, 0.38), transparent 65%),
-    radial-gradient(900px 700px at 8% 55%, rgba(140, 20, 44, 0.30), transparent 65%),
-    radial-gradient(1100px 900px at 50% 100%, rgba(95, 12, 28, 0.45), transparent 70%),
-    linear-gradient(180deg, #140407 0%, #090204 32%, #050103 68%, #100307 100%);
+    radial-gradient(1100px 720px at 50% -6%, rgba(200, 34, 80, 0.50), transparent 68%),
+    radial-gradient(900px 720px at 100% 24%, rgba(165, 24, 64, 0.52), transparent 66%),
+    radial-gradient(900px 720px at 0% 58%, rgba(155, 22, 60, 0.48), transparent 66%),
+    radial-gradient(1000px 820px at 50% 100%, rgba(125, 16, 50, 0.58), transparent 70%),
+    linear-gradient(170deg, #74102e 0%, #560a22 40%, #3e0818 72%, #5a0d27 100%);
   background-attachment: fixed;
   min-height: 100vh;
 }
@@ -89,8 +95,10 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(650px 480px at 50% 36%, rgba(229, 185, 102, 0.22), transparent 75%),
-    radial-gradient(900px 600px at 50% 50%, rgba(163, 25, 53, 0.28), transparent 80%);
+    radial-gradient(560px 420px at 50% 34%, rgba(229, 185, 102, 0.16), transparent 72%),
+    radial-gradient(900px 620px at 50% 46%, rgba(210, 36, 84, 0.34), transparent 76%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
   pointer-events: none;
 }
 
@@ -123,12 +131,12 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   gap: 12px;
   padding: 6px 20px;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(229, 185, 102, 0.15), rgba(163, 25, 53, 0.25));
+  background: linear-gradient(135deg, rgba(229, 185, 102, 0.15), rgba(220, 44, 92, 0.25));
   border: 1px solid var(--gold-border);
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 245, 222, 0.2);
 }
 .stars {
-  color: var(--gold-bright);
+  color: var(--rose);
   letter-spacing: 0.18em;
   font-size: 11px;
   filter: drop-shadow(0 0 6px var(--gold));
@@ -253,7 +261,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   font-size: 14px;
   font-weight: 500;
   color: var(--cream);
-  background: linear-gradient(135deg, rgba(32, 8, 17, 0.9), rgba(16, 4, 8, 0.95));
+  background: linear-gradient(135deg, rgba(56, 11, 30, 0.9), rgba(32, 6, 16, 0.95));
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 245, 222, 0.15);
 }
 .pill.open {
@@ -285,7 +293,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   padding: 14px 20px;
   border-radius: 14px;
   border: 1px solid var(--gold-border);
-  background: linear-gradient(145deg, rgba(28, 7, 14, 0.92), rgba(15, 3, 7, 0.96));
+  background: linear-gradient(145deg, rgba(50, 10, 25, 0.92), rgba(30, 5, 14, 0.96));
   text-align: left;
   font-size: 15px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
@@ -293,13 +301,13 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
 .notice.error {
   border-color: rgba(255, 125, 112, 0.6);
   color: #ffe6e2;
-  background: linear-gradient(145deg, rgba(50, 10, 18, 0.92), rgba(25, 5, 10, 0.96));
+  background: linear-gradient(145deg, rgba(83, 14, 31, 0.92), rgba(46, 8, 19, 0.96));
   box-shadow: 0 8px 25px rgba(255, 125, 112, 0.15);
 }
 .notice.ok {
   border-color: rgba(125, 232, 158, 0.6);
   color: #e2fae9;
-  background: linear-gradient(145deg, rgba(12, 38, 22, 0.92), rgba(6, 20, 12, 0.96));
+  background: linear-gradient(145deg, rgba(12, 38, 22, 0.92), rgba(17, 27, 22, 0.96));
   box-shadow: 0 8px 25px rgba(125, 232, 158, 0.15);
 }
 
@@ -308,7 +316,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   height: 220px;
   margin: 32px auto;
   border-radius: 20px;
-  background: linear-gradient(100deg, rgba(25, 6, 13, 0.8) 30%, rgba(45, 11, 23, 0.9) 50%, rgba(25, 6, 13, 0.8) 70%);
+  background: linear-gradient(100deg, rgba(46, 9, 24, 0.8) 30%, rgba(76, 15, 38, 0.9) 50%, rgba(46, 9, 24, 0.8) 70%);
   background-size: 200% 100%;
   border: 1px solid var(--gold-border);
   animation: shimmer 1.6s linear infinite;
@@ -321,8 +329,8 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   padding: 42px 30px;
   border: 1px solid var(--gold-border);
   border-radius: 24px;
-  background: linear-gradient(165deg, rgba(35, 9, 18, 0.92) 0%, rgba(14, 3, 7, 0.98) 100%);
-  box-shadow: 0 24px 60px -15px rgba(0, 0, 0, 0.85), 0 0 35px -5px rgba(163, 25, 53, 0.25), inset 0 1px 0 rgba(255, 245, 222, 0.15);
+  background: linear-gradient(165deg, rgba(60, 13, 31, 0.92) 0%, rgba(29, 5, 14, 0.98) 100%);
+  box-shadow: 0 24px 60px -15px rgba(0, 0, 0, 0.85), 0 0 35px -5px rgba(220, 44, 92, 0.25), inset 0 1px 0 rgba(255, 245, 222, 0.15);
 }
 .panel h3 { font-size: 2.1rem; color: var(--gold-bright); margin-bottom: 10px; }
 .panel p { color: var(--muted); margin: 0; font-size: 16px; }
@@ -348,7 +356,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   margin: 32px auto 0;
   max-width: 980px;
   padding: 14px 20px 12px;
-  background: rgba(9, 2, 4, 0.88);
+  background: rgba(22, 4, 10, 0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--gold-border);
@@ -362,7 +370,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
 .bar {
   flex: 1;
   height: 8px;
-  background: rgba(35, 9, 18, 0.8);
+  background: rgba(60, 13, 31, 0.8);
   border: 1px solid rgba(229, 185, 102, 0.2);
   border-radius: 999px;
   overflow: hidden;
@@ -396,13 +404,13 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   text-decoration: none;
   border: 1px solid var(--gold-border);
   color: var(--muted);
-  background: linear-gradient(145deg, rgba(26, 6, 13, 0.9), rgba(14, 3, 7, 0.95));
+  background: linear-gradient(145deg, rgba(47, 9, 24, 0.9), rgba(29, 5, 14, 0.95));
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   transition: all 0.25s ease;
 }
 .chip:hover {
-  border-color: var(--gold-bright);
-  color: var(--gold-bright);
+  border-color: var(--rose);
+  color: var(--rose);
   transform: translateY(-1px);
 }
 .chip.done {
@@ -426,12 +434,12 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   padding: 32px 26px 26px;
   border: 1px solid var(--gold-border);
   border-radius: 24px;
-  background: linear-gradient(165deg, rgba(30, 8, 15, 0.88) 0%, rgba(13, 3, 7, 0.96) 100%);
+  background: linear-gradient(165deg, rgba(53, 11, 26, 0.88) 0%, rgba(28, 5, 14, 0.96) 100%);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow:
     0 24px 60px -15px rgba(0, 0, 0, 0.9),
-    0 0 35px -5px rgba(163, 25, 53, 0.22),
+    0 0 35px -5px rgba(220, 44, 92, 0.22),
     inset 0 1px 0 rgba(255, 245, 222, 0.16);
   position: relative;
   overflow: hidden;
@@ -450,12 +458,12 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   font-weight: 700;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--gold-bright);
+  color: var(--rose);
   margin-bottom: 8px;
   padding: 3px 14px;
   border-radius: 999px;
-  background: rgba(229, 185, 102, 0.12);
-  border: 1px solid rgba(229, 185, 102, 0.25);
+  background: var(--rose-soft);
+  border: 1px solid var(--rose-border);
 }
 .cat-name {
   display: block;
@@ -530,15 +538,15 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   padding: 16px 18px;
   border: 1px solid rgba(229, 185, 102, 0.22);
   border-radius: 16px;
-  background: linear-gradient(145deg, rgba(22, 5, 11, 0.9) 0%, rgba(12, 2, 6, 0.96) 100%);
+  background: linear-gradient(145deg, rgba(41, 8, 20, 0.9) 0%, rgba(26, 4, 13, 0.96) 100%);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .nominee:hover .card {
   border-color: var(--gold-bright);
   transform: translateY(-2px);
-  background: linear-gradient(145deg, rgba(38, 9, 19, 0.94) 0%, rgba(18, 4, 9, 0.98) 100%);
-  box-shadow: 0 12px 28px -6px rgba(163, 25, 53, 0.45), 0 0 16px rgba(229, 185, 102, 0.25);
+  background: linear-gradient(145deg, rgba(65, 13, 32, 0.94) 0%, rgba(35, 6, 18, 0.98) 100%);
+  box-shadow: 0 12px 28px -6px rgba(220, 44, 92, 0.45), 0 0 16px rgba(229, 185, 102, 0.25);
 }
 
 .nominee .radio {
@@ -550,7 +558,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   display: grid;
   place-items: center;
   transition: all 0.25s ease;
-  background: rgba(10, 2, 5, 0.6);
+  background: rgba(23, 4, 12, 0.6);
 }
 .nominee .radio::after {
   content: '';
@@ -574,11 +582,11 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
 /* Checked Nominee (Radiant 5-Star Winner Appearance) */
 .nominee input:checked + .card {
   border-color: var(--gold-bright);
-  background: linear-gradient(135deg, rgba(163, 25, 53, 0.48) 0%, rgba(55, 11, 23, 0.88) 50%, rgba(18, 4, 9, 0.96) 100%);
+  background: linear-gradient(135deg, rgba(220, 44, 92, 0.48) 0%, rgba(90, 15, 38, 0.88) 50%, rgba(35, 6, 18, 0.96) 100%);
   box-shadow:
     0 0 0 1px var(--gold-bright),
     0 14px 34px -8px rgba(229, 185, 102, 0.55),
-    0 0 25px rgba(163, 25, 53, 0.45),
+    0 0 25px rgba(220, 44, 92, 0.45),
     inset 0 1px 0 rgba(255, 245, 222, 0.3);
   transform: translateY(-1px);
 }
@@ -600,7 +608,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   border: 1px solid var(--gold-border);
   border-radius: 20px;
   overflow: hidden;
-  background: linear-gradient(165deg, rgba(28, 7, 14, 0.92) 0%, rgba(13, 3, 7, 0.98) 100%);
+  background: linear-gradient(165deg, rgba(50, 10, 25, 0.92) 0%, rgba(28, 5, 14, 0.98) 100%);
   box-shadow: 0 18px 45px -10px rgba(0, 0, 0, 0.7);
 }
 .summary li {
@@ -656,7 +664,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   padding: 15px 18px;
   border-radius: 14px;
   border: 1px solid var(--gold-border);
-  background: linear-gradient(145deg, rgba(22, 5, 11, 0.95), rgba(12, 2, 6, 0.98));
+  background: linear-gradient(145deg, rgba(41, 8, 20, 0.95), rgba(26, 4, 13, 0.98));
   color: var(--cream-bright);
   font: inherit;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -718,7 +726,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   padding: 28px 20px;
   border: 1px solid var(--gold-border);
   border-radius: 20px;
-  background: linear-gradient(165deg, rgba(32, 8, 17, 0.9) 0%, rgba(13, 3, 7, 0.98) 100%);
+  background: linear-gradient(165deg, rgba(56, 11, 30, 0.9) 0%, rgba(28, 5, 14, 0.98) 100%);
   box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 245, 222, 0.15);
 }
 .result-card h3 {
@@ -786,7 +794,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   margin-bottom: 12px;
   position: sticky;
   top: 0;
-  background: rgba(9, 2, 4, 0.92);
+  background: rgba(22, 4, 10, 0.92);
   backdrop-filter: blur(14px);
   z-index: 15;
 }
@@ -795,7 +803,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   padding: 11px 20px;
   border-radius: 999px;
   border: 1px solid var(--gold-border);
-  background: rgba(24, 6, 12, 0.85);
+  background: rgba(44, 9, 22, 0.85);
   color: var(--muted);
   font: 600 14px var(--sans);
   cursor: pointer;
@@ -814,13 +822,13 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   padding: 22px;
   border: 1px solid var(--gold-border);
   border-radius: 18px;
-  background: linear-gradient(165deg, rgba(28, 7, 14, 0.9) 0%, rgba(13, 3, 7, 0.96) 100%);
+  background: linear-gradient(165deg, rgba(50, 10, 25, 0.9) 0%, rgba(28, 5, 14, 0.96) 100%);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
 }
 .adm-card.flush { padding: 0; overflow-x: auto; }
 .adm-card.highlight {
   border-color: var(--gold-bright);
-  background: linear-gradient(180deg, rgba(229, 185, 102, 0.12), rgba(28, 7, 14, 0.92));
+  background: linear-gradient(180deg, rgba(229, 185, 102, 0.12), rgba(50, 10, 25, 0.92));
   box-shadow: 0 0 25px rgba(229, 185, 102, 0.2);
 }
 .adm-card p { margin: 8px 0; }
@@ -831,13 +839,12 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
 .adm-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 18px 0 6px; }
 .adm-row select { flex: 1; min-width: 200px; }
 
-.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 10px 0; }
-@media (min-width: 640px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 10px 0; }
 .stat {
   padding: 20px 16px;
   border: 1px solid var(--gold-border);
   border-radius: 18px;
-  background: linear-gradient(145deg, rgba(26, 6, 13, 0.85), rgba(14, 3, 7, 0.95));
+  background: linear-gradient(145deg, rgba(47, 9, 24, 0.85), rgba(29, 5, 14, 0.95));
   text-align: center;
   box-shadow: 0 8px 20px rgba(0,0,0,0.4);
 }
@@ -973,3 +980,10 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .rise { opacity: 1; transform: none; }
 }
+
+@media (max-width: 540px) {
+  .eyebrow { letter-spacing: 0.2em; font-size: 11px; padding: 6px 14px; gap: 8px; white-space: nowrap; max-width: 100%; }
+}
+
+/* let the glow of the number chips breathe instead of being clipped into a box */
+.chips { padding: 8px 8px 10px; margin: 4px -8px 0; }

@@ -3,8 +3,6 @@ import { query } from './db';
 export type VotingRow = {
   status: 'draft' | 'open' | 'closed';
   method: 'codes' | 'open';
-  starts_at: Date | null;
-  ends_at: Date | null;
   results_published: boolean;
   results_published_at: Date | null;
 };
@@ -12,17 +10,15 @@ export type VotingRow = {
 export type Phase = 'not_open' | 'open' | 'closed';
 
 export async function getConfig(q: typeof query = query): Promise<VotingRow> {
-  const rows = await q<VotingRow>('SELECT status, method, starts_at, ends_at, results_published, results_published_at FROM voting_config WHERE id = 1');
+  const rows = await q<VotingRow>('SELECT status, method, results_published, results_published_at FROM voting_config WHERE id = 1');
   return rows[0];
 }
 
-/** What voters actually experience right now, combining the admin switch and the schedule. */
-export function effectivePhase(cfg: VotingRow, now = new Date()): { phase: Phase; scheduled: boolean } {
-  if (cfg.status === 'closed') return { phase: 'closed', scheduled: false };
-  if (cfg.status === 'draft') return { phase: 'not_open', scheduled: false };
-  if (cfg.starts_at && now < cfg.starts_at) return { phase: 'not_open', scheduled: true };
-  if (cfg.ends_at && now >= cfg.ends_at) return { phase: 'closed', scheduled: false };
-  return { phase: 'open', scheduled: false };
+/** What voters experience: it follows the admin's Open/Close switch only. There is no schedule, so voting is open 24/7. */
+export function effectivePhase(cfg: VotingRow): { phase: Phase } {
+  if (cfg.status === 'closed') return { phase: 'closed' };
+  if (cfg.status === 'draft') return { phase: 'not_open' };
+  return { phase: 'open' };
 }
 
 export const ELIGIBLE_NOMINEE = 'n.published = true AND n.archived_at IS NULL';

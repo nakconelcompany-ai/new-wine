@@ -3,16 +3,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 type Overview = {
-  config: { status: string; method: 'codes' | 'open'; phase: 'not_open' | 'open' | 'closed'; scheduled: boolean; startsAt: string | null; endsAt: string | null; resultsPublished: boolean; resultsPublishedAt: string | null };
+  config: { status: string; phase: 'not_open' | 'open' | 'closed'; resultsPublished: boolean; resultsPublishedAt: string | null };
   readiness: { method: 'codes' | 'open'; categoriesMissingNominees: string[]; unusedCodes: number; requiredCategories: number; ready: boolean };
   stats: { categories: number; publishedNominees: number; ballots: number; codes: { total: number; used: number; revoked: number } };
   categories: { id: string; name: string; eligibleNominees: number; votesRecorded: number }[];
   nominees: { id: string; categoryId: string; name: string; published: boolean; archived: boolean }[];
 };
-type CodeRow = { id: string; label: string | null; status: string; usedAt: string | null; createdAt: string };
 type ResultCat = { id: string; name: string; totalVotes: number; tie: boolean; noVotes: boolean; leaders: string[]; nominees: { id: string; name: string; votes: number; published: boolean; archived: boolean }[] };
 
-const TABS = ['Overview', 'Nominees', 'Voting', 'Codes', 'Results', 'Account'] as const;
+const TABS = ['Overview', 'Nominees', 'Voting', 'Results', 'Account'] as const;
 type Tab = (typeof TABS)[number];
 
 async function api<T = Record<string, unknown>>(path: string, method = 'GET', body?: unknown): Promise<T> {
@@ -30,12 +29,6 @@ async function api<T = Record<string, unknown>>(path: string, method = 'GET', bo
 }
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—');
-const toLocalInput = (iso: string | null) => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-};
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -80,7 +73,6 @@ export default function AdminDashboard() {
           {tab === 'Overview' && <OverviewTab ov={ov} />}
           {tab === 'Nominees' && <NomineesTab ov={ov} run={run} />}
           {tab === 'Voting' && <VotingTab ov={ov} run={run} />}
-          {tab === 'Codes' && <CodesTab ov={ov} refresh={refresh} setMsg={setMsg} />}
           {tab === 'Results' && <ResultsTab ov={ov} />}
           {tab === 'Account' && <AccountTab run={run} />}
         </>
@@ -94,7 +86,7 @@ type Run = (fn: () => Promise<unknown>, okText: string) => Promise<boolean>;
 function phaseLabel(c: Overview['config']) {
   if (c.phase === 'open') return 'Open';
   if (c.phase === 'closed') return 'Closed';
-  return c.scheduled ? 'Scheduled (not open yet)' : 'Not open';
+  return 'Not open yet';
 }
 
 function OverviewTab({ ov }: { ov: Overview }) {
@@ -105,13 +97,10 @@ function OverviewTab({ ov }: { ov: Overview }) {
         <div className="stat"><b>{stats.categories}</b><span>Categories</span></div>
         <div className="stat"><b>{stats.publishedNominees}</b><span>Published nominees</span></div>
         <div className="stat"><b>{stats.ballots}</b><span>Ballots recorded</span></div>
-        <div className="stat"><b>{stats.codes.used}/{stats.codes.total}</b><span>Codes used</span></div>
       </div>
       <div className="adm-card">
         <p><strong>Voting:</strong> <span className={`badge ${config.phase}`}>{phaseLabel(config)}</span></p>
         <p><strong>Public results:</strong> <span className={`badge ${config.resultsPublished ? 'open' : ''}`}>{config.resultsPublished ? 'Published' : 'Hidden (admin only)'}</span></p>
-        {config.startsAt && <p className="muted">Starts: {fmt(config.startsAt)}</p>}
-        {config.endsAt && <p className="muted">Ends: {fmt(config.endsAt)}</p>}
       </div>
       <h2 className="adm-h2">Category activity</h2>
       <div className="adm-card flush">
@@ -211,59 +200,29 @@ function NomineesTab({ ov, run }: { ov: Overview; run: Run }) {
 
 function VotingTab({ ov, run }: { ov: Overview; run: Run }) {
   const { config, readiness } = ov;
-  const [start, setStart] = useState(toLocalInput(config.startsAt));
-  const [end, setEnd] = useState(toLocalInput(config.endsAt));
   const post = (body: object, okText: string) => run(() => api('/api/admin/voting', 'POST', body), okText);
-
-  const setMethod = (m: 'codes' | 'open') => {
-    if (m === config.method) return;
-    if (m === 'open' && !confirm('Switch to open voting? Anyone with the link will be able to vote, once per device. A person could vote again from another phone or a private tab.')) return;
-    post({ action: 'set_method', method: m }, m === 'open' ? 'Open voting is on. No code is asked for.' : 'Personal voting codes are required again.');
-  };
 
   return (
     <>
       <div className="adm-card">
-        <h2 className="adm-h2">Who can vote</h2>
-        <label className="check-row"><input type="radio" name="method" checked={config.method === 'codes'} onChange={() => setMethod('codes')} /> Personal voting codes (recommended)</label>
-        <p className="muted">Each member gets a one-time code. The strongest protection against repeat voting.</p>
-        <label className="check-row"><input type="radio" name="method" checked={config.method === 'open'} onChange={() => setMethod('open')} /> Anyone with the link, one vote per device</label>
-        <p className="muted">No code on the voting page. Easier for voters, but a person can vote again from another phone or a private browser tab.</p>
-      </div>
-
-      <div className="adm-card">
-        <h2 className="adm-h2">Ballot readiness</h2>
+        <h2 className="adm-h2">Voting</h2>
+        <p className="muted">While voting is open, anyone with the link can vote at any time of day or night, once per device. There is no schedule.</p>
         <ul className="checks">
           <li className={readiness.categoriesMissingNominees.length === 0 ? 'good' : 'bad'}>
             {readiness.categoriesMissingNominees.length === 0
               ? `All ${readiness.requiredCategories} categories have published nominees`
               : `Missing nominees: ${readiness.categoriesMissingNominees.join(', ')}`}
           </li>
-          {config.method === 'codes' ? (
+          {readiness.method === 'codes' && (
             <li className={readiness.unusedCodes > 0 ? 'good' : 'bad'}>
-              {readiness.unusedCodes > 0 ? `${readiness.unusedCodes} unused voting codes available` : 'No unused voting codes — generate some in the Codes tab'}
+              {readiness.unusedCodes > 0 ? `${readiness.unusedCodes} unused voting codes available` : 'No unused voting codes'}
             </li>
-          ) : (
-            <li className="good">Open voting: no codes needed (one vote per device)</li>
           )}
         </ul>
         <p><strong>Status:</strong> <span className={`badge ${config.phase}`}>{phaseLabel(config)}</span></p>
         <div className="btn-row">
           <button className="btn-gold" onClick={() => post({ action: 'open' }, 'Voting is now open.')} disabled={config.status === 'open' || !readiness.ready}>Open voting</button>
           <button className="btn-ghost" onClick={() => post({ action: 'close' }, 'Voting is now closed.')} disabled={config.status === 'closed'}>Close voting</button>
-        </div>
-      </div>
-
-      <div className="adm-card">
-        <h2 className="adm-h2">Voting period (optional)</h2>
-        <p className="muted">Times use this device’s time zone. The server enforces them even if voting is switched on.</p>
-        <label htmlFor="st">Starts</label>
-        <input id="st" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
-        <label htmlFor="en">Ends</label>
-        <input id="en" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
-        <div className="btn-row">
-          <button className="btn-gold" onClick={() => post({ action: 'schedule', startsAt: start ? new Date(start).toISOString() : null, endsAt: end ? new Date(end).toISOString() : null }, 'Schedule saved.')}>Save schedule</button>
-          <button className="btn-ghost" onClick={() => { setStart(''); setEnd(''); post({ action: 'schedule', startsAt: null, endsAt: null }, 'Schedule cleared.'); }}>Clear</button>
         </div>
       </div>
 
@@ -276,101 +235,6 @@ function VotingTab({ ov, run }: { ov: Overview; run: Run }) {
             ? <button className="btn-gold" disabled={config.phase !== 'closed'} onClick={() => { if (confirm('Publish the final results to the public website?')) post({ action: 'publish_results' }, 'Results published.'); }}>Publish results</button>
             : <button className="btn-ghost" onClick={() => post({ action: 'unpublish_results' }, 'Results are hidden again.')}>Unpublish results</button>}
         </div>
-      </div>
-    </>
-  );
-}
-
-function CodesTab({ ov, refresh, setMsg }: { ov: Overview; refresh: () => Promise<void>; setMsg: (m: { type: 'ok' | 'error'; text: string } | null) => void }) {
-  const [rows, setRows] = useState<CodeRow[]>([]);
-  const [labelsText, setLabelsText] = useState('');
-  const [count, setCount] = useState(10);
-  const [fresh, setFresh] = useState<{ code: string; label: string | null }[]>([]);
-  const [busy, setBusy] = useState(false);
-
-  const load = useCallback(async () => {
-    try { setRows((await api<{ codes: CodeRow[] }>('/api/admin/codes')).codes); }
-    catch (e) { setMsg({ type: 'error', text: (e as Error).message }); }
-  }, [setMsg]);
-  useEffect(() => { load(); }, [load]);
-
-  async function generate(e: React.FormEvent) {
-    e.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    setMsg(null);
-    try {
-      const labels = labelsText.split('\n').map((s) => s.trim()).filter(Boolean);
-      const d = await api<{ codes: { code: string; label: string | null }[] }>('/api/admin/codes', 'POST', labels.length ? { labels } : { count });
-      setFresh(d.codes);
-      setLabelsText('');
-      setMsg({ type: 'ok', text: `${d.codes.length} codes generated. Save them now — they are shown only once.` });
-      await Promise.all([load(), refresh()]);
-    } catch (err) { setMsg({ type: 'error', text: (err as Error).message }); }
-    finally { setBusy(false); }
-  }
-
-  const csvEscape = (s: string) => `"${s.replace(/"/g, '""')}"`;
-  function download() {
-    const csv = ['Label,Code', ...fresh.map((f) => `${csvEscape(f.label ?? '')},${f.code}`)].join('\r\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = 'new-wine-voting-codes.csv';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
-  async function copyAll() {
-    const text = fresh.map((f) => (f.label ? `${f.label}: ${f.code}` : f.code)).join('\n');
-    try { await navigator.clipboard.writeText(text); setMsg({ type: 'ok', text: 'Codes copied.' }); }
-    catch { setMsg({ type: 'error', text: 'Could not copy automatically — select the codes and copy them manually.' }); }
-  }
-  async function toggle(r: CodeRow) {
-    try { await api(`/api/admin/codes/${r.id}`, 'PATCH', { action: r.status === 'active' ? 'revoke' : 'reactivate' }); await Promise.all([load(), refresh()]); }
-    catch (e) { setMsg({ type: 'error', text: (e as Error).message }); }
-  }
-
-  return (
-    <>
-      {ov.config.method === 'open' && <p className="notice">Open voting is on, so voters are not asked for a code right now. Switch back in the Voting tab to use codes.</p>}
-      <form className="adm-card" onSubmit={generate}>
-        <h2 className="adm-h2">Generate voting codes</h2>
-        <p className="muted">One code per voter. Codes are stored as secure hashes, so they can’t be viewed again after this screen.</p>
-        <label htmlFor="lb">Names or labels (optional — one per line)</label>
-        <textarea id="lb" rows={4} value={labelsText} onChange={(e) => setLabelsText(e.target.value)} placeholder={'Ada\nChidi\n…'} />
-        <label htmlFor="ct">…or just a number of codes</label>
-        <input id="ct" type="number" min={1} max={500} value={count} onChange={(e) => setCount(Number(e.target.value))} disabled={!!labelsText.trim()} />
-        <button className="btn-gold" disabled={busy}>{busy ? 'Generating…' : 'Generate codes'}</button>
-      </form>
-
-      {fresh.length > 0 && (
-        <div className="adm-card highlight">
-          <h2 className="adm-h2">New codes — save these now</h2>
-          <div className="btn-row">
-            <button className="btn-small" onClick={copyAll}>Copy all</button>
-            <button className="btn-small" onClick={download}>Download CSV</button>
-            <button className="btn-small ghost" onClick={() => setFresh([])}>Hide</button>
-          </div>
-          <ul className="codes">
-            {fresh.map((f) => (<li key={f.code}><span>{f.label ?? ''}</span><code>{f.code}</code></li>))}
-          </ul>
-        </div>
-      )}
-
-      <h2 className="adm-h2">All codes ({ov.stats.codes.used} used of {ov.stats.codes.total})</h2>
-      <div className="adm-card flush">
-        <table className="tbl">
-          <thead><tr><th>Label</th><th>Status</th><th></th></tr></thead>
-          <tbody>
-            {rows.length === 0 && <tr><td colSpan={3} className="muted">No codes yet.</td></tr>}
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td>{r.label || <span className="muted">(no label)</span>}</td>
-                <td><span className={`badge ${r.usedAt ? 'open' : r.status === 'revoked' ? 'closed' : ''}`}>{r.usedAt ? 'Used' : r.status === 'revoked' ? 'Revoked' : 'Unused'}</span></td>
-                <td>{!r.usedAt && <button className="btn-small ghost" onClick={() => toggle(r)}>{r.status === 'active' ? 'Revoke' : 'Reactivate'}</button>}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     </>
   );

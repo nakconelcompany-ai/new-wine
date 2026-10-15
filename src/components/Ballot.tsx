@@ -8,9 +8,6 @@ type Category = { id: string; key: string; name: string; nominees: Nominee[] };
 type BallotData = {
   phase: 'not_open' | 'open' | 'closed' | 'unavailable';
   method: 'codes' | 'open';
-  scheduled: boolean;
-  startsAt: string | null;
-  endsAt: string | null;
   resultsPublished: boolean;
   categories?: Category[];
 };
@@ -21,7 +18,6 @@ type ResultsData = {
 
 const STORE = 'nw-selections-v1';
 const VOTED = 'nw-voted-v1';
-const fmt = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
 export default function Ballot() {
   const [data, setData] = useState<BallotData | null>(null);
@@ -170,11 +166,7 @@ export default function Ballot() {
       {data && data.phase === 'not_open' && (
         <div className="panel center">
           <h3>Voting hasn’t opened yet</h3>
-          <p>
-            {data.scheduled && data.startsAt
-              ? `Voting opens on ${fmt(data.startsAt)}. Please come back then.`
-              : 'The ballot is being prepared. Please check back soon.'}
-          </p>
+          <p>The ballot is being prepared. Please check back soon.</p>
         </div>
       )}
       {data && data.phase === 'unavailable' && (

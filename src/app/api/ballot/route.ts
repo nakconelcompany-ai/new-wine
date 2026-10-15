@@ -7,12 +7,9 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const cfg = await getConfig();
-    const { phase, scheduled } = effectivePhase(cfg);
+    const { phase } = effectivePhase(cfg);
     const base = {
       phase: phase as string,
-      scheduled,
-      startsAt: cfg.starts_at,
-      endsAt: cfg.ends_at,
       resultsPublished: cfg.results_published,
       method: cfg.method as string,
     };

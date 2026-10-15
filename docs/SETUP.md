@@ -30,9 +30,8 @@ None of these use the `NEXT_PUBLIC_` prefix, so none can reach the browser.
 3. Deploy. The build creates the tables and seeds the 17 categories and loads the nominees.
 4. Open `/admin`, sign in, then **Account → Change password** straight away.
 5. **Nominees** tab → the nominees are already loaded and published; check the spelling of each name, rename or add where needed.
-6. **Codes** tab → generate one code per voter. Save/copy/download them immediately — they are shown once and stored only as hashes.
-7. **Voting** tab → choose **Who can vote** (personal codes, or open link with one vote per device) → check readiness → optionally set start/end times → **Open voting**.
-8. When finished: **Close voting** → review the **Results** tab → export CSV → **Publish results** when ready.
+6. **Voting** tab → check readiness → **Open voting**. Voting then stays open 24/7 (there is no schedule) until you press **Close voting**.
+7. When finished: **Close voting** → review the **Results** tab → export CSV → **Publish results** when ready.
 
 ## 3b. Category posters
 
@@ -40,7 +39,7 @@ Each category can show a poster image instead of a text title. Put the image in 
 
 ## 4. How the rules are enforced
 
-* Voting method is chosen in the dashboard. **Personal codes** (default) is the strongest. **Open link** needs no code and allows one vote per device (cookie), so a person can vote again from another phone or a private tab.
+* Anyone with the link can vote while voting is open, once per device (a cookie marks the device). A person can vote again from another phone or a private browser tab; this is the trade-off of not asking for a code. Personal-code voting still exists in the backend but is not offered in the dashboard.
 * One ballot per code: the code row is locked inside the submission transaction, `ballots.voter_code_id` is `UNIQUE`, and the code is marked used in the same transaction.
 * A nominee can only be chosen in its own category: a composite foreign key on `ballot_selections(nominee_id, category_id)` enforces it in the database, besides the server checks.
 * One selection per category per ballot: `UNIQUE (ballot_id, category_id)`.

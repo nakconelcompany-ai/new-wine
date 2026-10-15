@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     'Celebrating the bond we share beyond the music, the friendships we build, and the beautiful memories we create together.',
 };
 
-export const viewport: Viewport = { themeColor: '#090204', width: 'device-width', initialScale: 1 };
+export const viewport: Viewport = { themeColor: '#4a0a1e', width: 'device-width', initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

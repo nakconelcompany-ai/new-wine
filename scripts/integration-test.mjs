@@ -28,6 +28,9 @@ const cookieOf = (res) => (res.headers.getSetCookie?.()[0] || '').split(';')[0];
 
 async function main() {
   await db.connect();
+  const m0 = (await db.query('SELECT method, starts_at, ends_at FROM voting_config')).rows[0];
+  ok(m0.method === 'open' && m0.starts_at === null && m0.ends_at === null, 'new installs default to open voting with no schedule');
+  await db.query("UPDATE voting_config SET method = 'codes'"); // exercise the personal-code path first
   console.log('\n# Public site');
   const home = await req('/');
   ok(home.text.includes('Beyond the Harmony'), 'hero shows "Beyond the Harmony"');
@@ -100,9 +103,14 @@ async function main() {
   ov = (await req('/api/admin/overview', { cookie })).json;
   for (const n of ov.nominees.filter((n) => n.categoryId === cats[4].id)) await req(`/api/admin/nominees/${n.id}`, { method: 'PATCH', cookie, body: { published: true } });
   const sched = await req('/api/admin/voting', { method: 'POST', cookie, body: { action: 'schedule', startsAt: new Date(Date.now() + 3600e3).toISOString(), endsAt: new Date(Date.now() + 60e3).toISOString() } });
-  ok(sched.status === 400, 'end time before start time rejected');
+  ok(sched.status === 400, 'the schedule feature is gone (no start/end times can be set)');
   const open2 = await req('/api/admin/voting', { method: 'POST', cookie, body: { action: 'open' } });
   ok(open2.status === 200, 'voting opens once ballot is ready');
+  await db.query("UPDATE voting_config SET starts_at = now() - interval '2 days', ends_at = now() - interval '1 day'");
+  ok((await req('/api/ballot')).json.phase === 'open', 'voting is open 24/7: an expired end time is ignored');
+  await db.query("UPDATE voting_config SET starts_at = now() + interval '1 day', ends_at = now() + interval '2 days'");
+  ok((await req('/api/ballot')).json.phase === 'open', 'voting is open 24/7: a future start time is ignored');
+  await db.query('UPDATE voting_config SET starts_at = NULL, ends_at = NULL');
 
   console.log('\n# Public ballot');
   b = await req('/api/ballot');
@@ -234,7 +242,7 @@ async function main() {
 
   console.log('\n# Open voting mode (no code, one vote per device)');
   const statsBefore = (await req('/api/admin/overview', { cookie: cookie2 })).json.stats;
-  ok((await req('/api/admin/voting', { method: 'POST', cookie: cookie2, body: { action: 'set_method', method: 'open' } })).status === 200, 'admin switches to open voting');
+  await db.query("UPDATE voting_config SET method = 'open'");
   ok((await req('/api/ballot')).json.method === 'open', 'public ballot reports open mode (page hides the code box)');
   const o1 = await vote(undefined, sel2, { ip: '203.0.113.88' });
   ok(o1.status === 201, 'open mode: ballot accepted without a code');
@@ -248,7 +256,7 @@ async function main() {
   ok(statsAfter.codes.total === statsBefore.codes.total && statsAfter.codes.used === statsBefore.codes.used, 'device votes do not appear as voting codes');
   const codeListAfter = (await req('/api/admin/codes', { cookie: cookie2 })).json.codes;
   ok(codeListAfter.every((c) => c.label !== 'open-link'), 'codes list hides automatic device entries');
-  ok((await req('/api/admin/voting', { method: 'POST', cookie: cookie2, body: { action: 'set_method', method: 'codes' } })).status === 200, 'admin switches back to personal codes');
+  ok((await req('/api/admin/voting', { method: 'POST', cookie: cookie2, body: { action: 'set_method', method: 'codes' } })).status === 400, 'the Who can vote switch is gone from the admin API');
 
   console.log(`\n${pass} passed, ${fail} failed`);
   await db.end();
