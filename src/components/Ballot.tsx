@@ -144,7 +144,7 @@ export default function Ballot() {
       <section id="vote" className="vote-intro" ref={topRef} aria-labelledby="vote-heading">
         <p className="eyebrow">Yearly Award</p>
         <h2 id="vote-heading" className="section-title">Celebrate Your Favourites</h2>
-        <div className="ornament small" aria-hidden="true"><span /><i>◆</i><span /></div>
+        <div className="straight-line" aria-hidden="true" />
         <p className="lead">A joyful moment to celebrate the gifts, service, and memories we share as one choir.</p>
         <p className="once-note">Please vote thoughtfully, with love and appreciation for every member.</p>
       </section>
