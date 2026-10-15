@@ -145,8 +145,8 @@ export default function Ballot() {
         <p className="eyebrow">Yearly Award</p>
         <h2 id="vote-heading" className="section-title">Celebrate Your Favourites</h2>
         <div className="ornament small" aria-hidden="true"><span /><i>◆</i><span /></div>
-        <p className="lead">We are using this opportunity to celebrate those who have put in the hard work.</p>
-        <p className="once-note">You can only vote once, so take your time and choose carefully.</p>
+        <p className="lead">A joyful moment to celebrate the gifts, service, and memories we share as one choir.</p>
+        <p className="once-note">Please vote thoughtfully, with love and appreciation for every member.</p>
       </section>
 
       {loadError && <p className="notice error" role="alert">{loadError}</p>}

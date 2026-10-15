@@ -10,10 +10,9 @@ export default function Home() {
         </div>
         <p className="eyebrow rise r1">
           <span className="stars" aria-hidden="true">★★★★★</span>
-          Celebrating Excellence
+          New Wine End of the Year Celebration
         </p>
         <h1 className="hero-title rise r2">Beyond the Harmony</h1>
-        <div className="ornament rise r3" aria-hidden="true"><span /><i>◆</i><span /></div>
         <p className="tagline rise r4">
           “Celebrating the bond we share beyond the music, the friendships we build, and the beautiful memories we create together.”
         </p>
