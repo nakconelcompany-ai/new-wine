@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BANNERS } from '@/lib/banners';
+import { BANNERS, SQUARE_POSTER_KEYS } from '@/lib/banners';
 
 type Nominee = { id: string; name: string };
 type Category = { id: string; key: string; name: string; nominees: Nominee[] };
@@ -220,7 +220,7 @@ export default function Ballot() {
               const err = errorCats.has(c.id);
               const banner = BANNERS[c.key] && !badBanners.has(c.key) ? BANNERS[c.key] : null;
               return (
-                <section key={c.id} id={`cat-${c.key}`} className={`category category-${c.key} ${err ? 'has-error' : ''} ${banner ? 'with-banner' : ''}`} aria-labelledby={`h-${c.key}`}>
+                <section key={c.id} id={`cat-${c.key}`} className={`category category-${c.key} ${err ? 'has-error' : ''} ${banner ? 'with-banner' : ''} ${SQUARE_POSTER_KEYS.has(c.key) ? 'square-poster' : ''}`} aria-labelledby={`h-${c.key}`}>
                   <fieldset aria-describedby={err ? `e-${c.key}` : undefined}>
                     <legend>
                       <span className="cat-num">Category {i + 1} of {cats.length}</span>

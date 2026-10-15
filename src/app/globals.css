@@ -523,13 +523,11 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
 }
 
 /* The supplied Voice of the Year artwork is square; keep every detail visible. */
-.category-voice-of-the-year-male .cat-banner,
-.category-voice-of-the-year-female .cat-banner {
+.category.square-poster .cat-banner {
   aspect-ratio: 1;
   background: #12050b;
 }
-.category-voice-of-the-year-male .cat-banner img,
-.category-voice-of-the-year-female .cat-banner img { object-fit: contain; }
+.category.square-poster .cat-banner img { object-fit: contain; }
 
 /* ---------- Nominee Cards (High-Contrast Black Velvet & Gold Finish) ---------- */
 .nominees {
@@ -599,6 +597,21 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
 
 @media (min-width: 780px) {
   .nominees { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Desktop gallery: show three complete award categories across each row. */
+@media (min-width: 900px) {
+  .categories {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+    max-width: 1320px;
+  }
+  .category { margin: 0; padding: 22px 16px 18px; border-radius: 20px; }
+  .cat-banner { margin: -22px -16px 18px; }
+  .category.square-poster .cat-banner { aspect-ratio: 1; }
+  .nominees { grid-template-columns: 1fr; }
+  .cat-name { font-size: clamp(1.55rem, 2.3vw, 2rem); }
 }
 
 /* Checked Nominee (Radiant 5-Star Winner Appearance) */
