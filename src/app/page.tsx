@@ -9,7 +9,6 @@ export default function Home() {
           <span>♪</span><span>♫</span><span>♩</span><span>♬</span><span>♪</span><span>♫</span>
         </div>
         <p className="eyebrow rise r1">
-          <span className="stars" aria-hidden="true">★★★★★</span>
           New Wine End of the Year Celebration
         </p>
         <h1 className="hero-title rise r2">Beyond the Harmony</h1>
