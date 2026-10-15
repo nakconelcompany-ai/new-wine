@@ -15,7 +15,7 @@ export default function Home() {
         <h1 className="hero-title rise r2">Beyond the Harmony</h1>
         <div className="ornament rise r3" aria-hidden="true"><span /><i>◆</i><span /></div>
         <p className="tagline rise r4">
-          Honouring the voices, dedication, and shared spirit that make our choir extraordinary.
+          “Celebrating the bond we share beyond the music, the friendships we build, and the beautiful memories we create together.”
         </p>
         <div className="chevron rise r5" aria-hidden="true">⌄</div>
       </header>
