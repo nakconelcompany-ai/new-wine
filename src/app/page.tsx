@@ -10,12 +10,12 @@ export default function Home() {
         </div>
         <p className="eyebrow rise r1">
           <span className="stars" aria-hidden="true">★★★★★</span>
-          New Wine Choir Awards
+          Celebrating Excellence
         </p>
         <h1 className="hero-title rise r2">Beyond the Harmony</h1>
         <div className="ornament rise r3" aria-hidden="true"><span /><i>◆</i><span /></div>
         <p className="tagline rise r4">
-          “Celebrating the bond we share beyond the music, the friendships we build, and the beautiful memories we create together.”
+          Honouring the voices, dedication, and shared spirit that make our choir extraordinary.
         </p>
         <div className="chevron rise r5" aria-hidden="true">⌄</div>
       </header>
