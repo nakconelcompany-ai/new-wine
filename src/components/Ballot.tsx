@@ -220,7 +220,7 @@ export default function Ballot() {
               const err = errorCats.has(c.id);
               const banner = BANNERS[c.key] && !badBanners.has(c.key) ? BANNERS[c.key] : null;
               return (
-                <section key={c.id} id={`cat-${c.key}`} className={`category ${err ? 'has-error' : ''} ${banner ? 'with-banner' : ''}`} aria-labelledby={`h-${c.key}`}>
+                <section key={c.id} id={`cat-${c.key}`} className={`category category-${c.key} ${err ? 'has-error' : ''} ${banner ? 'with-banner' : ''}`} aria-labelledby={`h-${c.key}`}>
                   <fieldset aria-describedby={err ? `e-${c.key}` : undefined}>
                     <legend>
                       <span className="cat-num">Category {i + 1} of {cats.length}</span>
@@ -228,7 +228,7 @@ export default function Ballot() {
                     </legend>
                     {banner && (
                       <div className="cat-banner">
-                        <img src={banner} alt="" loading="lazy" decoding="async"
+                        <img src={banner} alt={`${c.name} award nominees`} loading="lazy" decoding="async"
                              onError={() => setBadBanners((p) => new Set(p).add(c.key))} />
                       </div>
                     )}

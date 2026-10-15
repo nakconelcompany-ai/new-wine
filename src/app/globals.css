@@ -505,6 +505,15 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   white-space: nowrap;
 }
 
+/* The supplied Voice of the Year artwork is square; keep every detail visible. */
+.category-voice-of-the-year-male .cat-banner,
+.category-voice-of-the-year-female .cat-banner {
+  aspect-ratio: 1;
+  background: #12050b;
+}
+.category-voice-of-the-year-male .cat-banner img,
+.category-voice-of-the-year-female .cat-banner img { object-fit: contain; }
+
 /* ---------- Nominee Cards (High-Contrast Black Velvet & Gold Finish) ---------- */
 .nominees {
   display: grid;
