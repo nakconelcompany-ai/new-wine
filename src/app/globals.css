@@ -864,6 +864,15 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; line-height
   box-shadow: 0 0 25px rgba(229, 185, 102, 0.2);
 }
 .adm-card p { margin: 8px 0; }
+.data-controls summary { cursor: pointer; color: var(--muted); font-weight: 600; }
+.data-controls[open] summary { color: var(--gold-bright); }
+.btn-danger {
+  width: 100%; margin-top: 20px; padding: 15px 22px; border-radius: 999px;
+  border: 1px solid rgba(255, 125, 112, 0.65); background: rgba(125, 16, 31, 0.25);
+  color: #ffe6e2; font: 700 15px var(--sans); cursor: pointer;
+}
+.btn-danger:hover:not(:disabled) { background: rgba(160, 22, 42, 0.45); }
+.btn-danger:disabled { opacity: 0.45; cursor: not-allowed; }
 .adm label { display: block; margin: 16px 0 8px; font-size: 14.5px; font-weight: 600; color: var(--cream); }
 .adm .check-row, .adm-login .check-row { display: flex; align-items: center; gap: 12px; font-weight: 500; }
 .adm .check-row input { width: 22px; height: 22px; accent-color: var(--gold); padding: 0; }

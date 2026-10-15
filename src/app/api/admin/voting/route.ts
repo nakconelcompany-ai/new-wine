@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { query } from '@/lib/db';
+import { query, tx } from '@/lib/db';
 import { HttpError } from '@/lib/env';
 import { json, handleError, readJson } from '@/lib/http';
 import { requireAdmin } from '@/lib/auth';
@@ -14,6 +14,7 @@ const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('close') }),
   z.object({ action: z.literal('publish_results') }),
   z.object({ action: z.literal('unpublish_results') }),
+  z.object({ action: z.literal('reset_ballots'), confirmation: z.literal('RESET BALLOTS') }),
 ]);
 
 export async function POST(req: Request) {
@@ -47,6 +48,15 @@ export async function POST(req: Request) {
 
       case 'unpublish_results':
         await query('UPDATE voting_config SET results_published = false, results_published_at = NULL, updated_at = now() WHERE id = 1');
+        break;
+
+      case 'reset_ballots':
+        if (cfg.status === 'open') throw new HttpError(409, 'Close voting before resetting ballots.');
+        await tx(async (c) => {
+          await c.query('DELETE FROM ballots');
+          await c.query("DELETE FROM voter_codes WHERE kind = 'device'");
+          await c.query('UPDATE voting_config SET results_published = false, results_published_at = NULL, updated_at = now() WHERE id = 1');
+        });
         break;
     }
     revalidatePath('/');

@@ -366,19 +366,35 @@ function ResultsTab({ ov }: { ov: Overview }) {
 function AccountTab({ run }: { run: Run }) {
   const [cur, setCur] = useState('');
   const [next, setNext] = useState('');
+  const [resetConfirmation, setResetConfirmation] = useState('');
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const ok = await run(() => api('/api/admin/password', 'POST', { currentPassword: cur, newPassword: next }), 'Password changed.');
     if (ok) { setCur(''); setNext(''); }
   }
+  async function resetBallots() {
+    if (resetConfirmation !== 'RESET BALLOTS') return;
+    if (!confirm('This permanently deletes every recorded ballot and lets devices vote again. Continue?')) return;
+    const ok = await run(() => api('/api/admin/voting', 'POST', { action: 'reset_ballots', confirmation: resetConfirmation }), 'All recorded ballots have been reset.');
+    if (ok) setResetConfirmation('');
+  }
   return (
-    <form className="adm-card" onSubmit={submit}>
-      <h2 className="adm-h2">Change password</h2>
-      <label htmlFor="cp">Current password</label>
-      <input id="cp" type="password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} required />
-      <label htmlFor="np">New password (at least 12 characters)</label>
-      <input id="np" type="password" autoComplete="new-password" minLength={12} value={next} onChange={(e) => setNext(e.target.value)} required />
-      <button className="btn-gold">Change password</button>
-    </form>
+    <>
+      <form className="adm-card" onSubmit={submit}>
+        <h2 className="adm-h2">Change password</h2>
+        <label htmlFor="cp">Current password</label>
+        <input id="cp" type="password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} required />
+        <label htmlFor="np">New password (at least 12 characters)</label>
+        <input id="np" type="password" autoComplete="new-password" minLength={12} value={next} onChange={(e) => setNext(e.target.value)} required />
+        <button className="btn-gold">Change password</button>
+      </form>
+      <details className="adm-card data-controls">
+        <summary>Data controls</summary>
+        <p className="muted">Use only when starting the ballot again. This permanently removes all submitted ballots and clears one-vote-per-device records. Voting must be closed first.</p>
+        <label htmlFor="reset-confirmation">Type <strong>RESET BALLOTS</strong> to continue</label>
+        <input id="reset-confirmation" value={resetConfirmation} onChange={(e) => setResetConfirmation(e.target.value)} autoComplete="off" />
+        <button type="button" className="btn-danger" onClick={resetBallots} disabled={resetConfirmation !== 'RESET BALLOTS'}>Reset all votes</button>
+      </details>
+    </>
   );
 }

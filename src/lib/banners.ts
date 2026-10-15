@@ -8,6 +8,9 @@ export const BANNERS: Record<string, string> = {
   'upcoming-voice-female': '/categories/upcoming-voice-female.png',
   'upcoming-praise-leader-male': '/categories/upcoming-praise-leader-male.png',
   'upcoming-praise-leader-female': '/categories/upcoming-praise-leader-female.png',
+  'most-compliant-uniform-male': '/categories/most-compliant-uniform-male.png',
+  'most-compliant-uniform-female': '/categories/most-compliant-uniform-female.png',
+  'most-dedicated-punctual-member': '/categories/most-dedicated-punctual-member.png',
 };
 
 export const SQUARE_POSTER_KEYS = new Set([
@@ -17,4 +20,7 @@ export const SQUARE_POSTER_KEYS = new Set([
   'upcoming-voice-female',
   'upcoming-praise-leader-male',
   'upcoming-praise-leader-female',
+  'most-compliant-uniform-male',
+  'most-compliant-uniform-female',
+  'most-dedicated-punctual-member',
 ]);
