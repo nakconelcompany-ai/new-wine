@@ -11,6 +11,14 @@ export const BANNERS: Record<string, string> = {
   'most-compliant-uniform-male': '/categories/most-compliant-uniform-male.png',
   'most-compliant-uniform-female': '/categories/most-compliant-uniform-female.png',
   'most-dedicated-punctual-member': '/categories/most-dedicated-punctual-member.png',
+  'most-energetic-female': '/categories/most-energetic-female.png',
+  'most-energetic-male': '/categories/most-energetic-male.png',
+  'power-house-personality-male': '/categories/power-house-personality-male.png',
+  'best-dancer-praise-female': '/categories/best-dancer-praise-female.png',
+  'best-dancer-praise-male': '/categories/best-dancer-praise-male.png',
+  'most-funny': '/categories/most-funny.png',
+  'power-house-personality-female': '/categories/power-house-personality-female.png',
+  'most-active-musician': '/categories/most-active-musician.png',
 };
 
 export const SQUARE_POSTER_KEYS = new Set([
@@ -23,4 +31,12 @@ export const SQUARE_POSTER_KEYS = new Set([
   'most-compliant-uniform-male',
   'most-compliant-uniform-female',
   'most-dedicated-punctual-member',
+  'most-energetic-female',
+  'most-energetic-male',
+  'power-house-personality-male',
+  'best-dancer-praise-female',
+  'best-dancer-praise-male',
+  'most-funny',
+  'power-house-personality-female',
+  'most-active-musician',
 ]);
