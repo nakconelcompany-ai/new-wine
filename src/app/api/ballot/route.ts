@@ -11,7 +11,6 @@ export async function GET() {
     const base = {
       phase: phase as string,
       resultsPublished: cfg.results_published,
-      method: cfg.method as string,
     };
     if (phase !== 'open') return json(base);
 

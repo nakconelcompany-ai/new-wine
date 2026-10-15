@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 
 type Overview = {
   config: { status: string; phase: 'not_open' | 'open' | 'closed'; resultsPublished: boolean; resultsPublishedAt: string | null };
-  readiness: { method: 'codes' | 'open'; categoriesMissingNominees: string[]; unusedCodes: number; requiredCategories: number; ready: boolean };
-  stats: { categories: number; publishedNominees: number; ballots: number; codes: { total: number; used: number; revoked: number } };
+  readiness: { categoriesMissingNominees: string[]; requiredCategories: number; ready: boolean };
+  stats: { categories: number; publishedNominees: number; ballots: number };
   categories: { id: string; name: string; eligibleNominees: number; votesRecorded: number }[];
   nominees: { id: string; categoryId: string; name: string; published: boolean; archived: boolean }[];
 };
@@ -86,7 +86,7 @@ type Run = (fn: () => Promise<unknown>, okText: string) => Promise<boolean>;
 function phaseLabel(c: Overview['config']) {
   if (c.phase === 'open') return 'Open';
   if (c.phase === 'closed') return 'Closed';
-  return 'Not open yet';
+  return 'Not open';
 }
 
 function OverviewTab({ ov }: { ov: Overview }) {
@@ -205,19 +205,14 @@ function VotingTab({ ov, run }: { ov: Overview; run: Run }) {
   return (
     <>
       <div className="adm-card">
-        <h2 className="adm-h2">Voting</h2>
-        <p className="muted">While voting is open, anyone with the link can vote at any time of day or night, once per device. There is no schedule.</p>
+        <h2 className="adm-h2">Ballot readiness</h2>
         <ul className="checks">
           <li className={readiness.categoriesMissingNominees.length === 0 ? 'good' : 'bad'}>
             {readiness.categoriesMissingNominees.length === 0
               ? `All ${readiness.requiredCategories} categories have published nominees`
               : `Missing nominees: ${readiness.categoriesMissingNominees.join(', ')}`}
           </li>
-          {readiness.method === 'codes' && (
-            <li className={readiness.unusedCodes > 0 ? 'good' : 'bad'}>
-              {readiness.unusedCodes > 0 ? `${readiness.unusedCodes} unused voting codes available` : 'No unused voting codes'}
-            </li>
-          )}
+          <li className="good">Anyone with the link can vote once per device</li>
         </ul>
         <p><strong>Status:</strong> <span className={`badge ${config.phase}`}>{phaseLabel(config)}</span></p>
         <div className="btn-row">
@@ -239,6 +234,101 @@ function VotingTab({ ov, run }: { ov: Overview; run: Run }) {
     </>
   );
 }
+
+/*function CodesTab({ ov, refresh, setMsg }: { ov: Overview; refresh: () => Promise<void>; setMsg: (m: { type: 'ok' | 'error'; text: string } | null) => void }) {
+  const [rows, setRows] = useState<CodeRow[]>([]);
+  const [labelsText, setLabelsText] = useState('');
+  const [count, setCount] = useState(10);
+  const [fresh, setFresh] = useState<{ code: string; label: string | null }[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    try { setRows((await api<{ codes: CodeRow[] }>('/api/admin/codes')).codes); }
+    catch (e) { setMsg({ type: 'error', text: (e as Error).message }); }
+  }, [setMsg]);
+  useEffect(() => { load(); }, [load]);
+
+  async function generate(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const labels = labelsText.split('\n').map((s) => s.trim()).filter(Boolean);
+      const d = await api<{ codes: { code: string; label: string | null }[] }>('/api/admin/codes', 'POST', labels.length ? { labels } : { count });
+      setFresh(d.codes);
+      setLabelsText('');
+      setMsg({ type: 'ok', text: `${d.codes.length} codes generated. Save them now — they are shown only once.` });
+      await Promise.all([load(), refresh()]);
+    } catch (err) { setMsg({ type: 'error', text: (err as Error).message }); }
+    finally { setBusy(false); }
+  }
+
+  const csvEscape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+  function download() {
+    const csv = ['Label,Code', ...fresh.map((f) => `${csvEscape(f.label ?? '')},${f.code}`)].join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'new-wine-voting-codes.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+  async function copyAll() {
+    const text = fresh.map((f) => (f.label ? `${f.label}: ${f.code}` : f.code)).join('\n');
+    try { await navigator.clipboard.writeText(text); setMsg({ type: 'ok', text: 'Codes copied.' }); }
+    catch { setMsg({ type: 'error', text: 'Could not copy automatically — select the codes and copy them manually.' }); }
+  }
+  async function toggle(r: CodeRow) {
+    try { await api(`/api/admin/codes/${r.id}`, 'PATCH', { action: r.status === 'active' ? 'revoke' : 'reactivate' }); await Promise.all([load(), refresh()]); }
+    catch (e) { setMsg({ type: 'error', text: (e as Error).message }); }
+  }
+
+  return (
+    <>
+      {ov.config.method === 'open' && <p className="notice">Open voting is on, so voters are not asked for a code right now. Switch back in the Voting tab to use codes.</p>}
+      <form className="adm-card" onSubmit={generate}>
+        <h2 className="adm-h2">Generate voting codes</h2>
+        <p className="muted">One code per voter. Codes are stored as secure hashes, so they can’t be viewed again after this screen.</p>
+        <label htmlFor="lb">Names or labels (optional — one per line)</label>
+        <textarea id="lb" rows={4} value={labelsText} onChange={(e) => setLabelsText(e.target.value)} placeholder={'Ada\nChidi\n…'} />
+        <label htmlFor="ct">…or just a number of codes</label>
+        <input id="ct" type="number" min={1} max={500} value={count} onChange={(e) => setCount(Number(e.target.value))} disabled={!!labelsText.trim()} />
+        <button className="btn-gold" disabled={busy}>{busy ? 'Generating…' : 'Generate codes'}</button>
+      </form>
+
+      {fresh.length > 0 && (
+        <div className="adm-card highlight">
+          <h2 className="adm-h2">New codes — save these now</h2>
+          <div className="btn-row">
+            <button className="btn-small" onClick={copyAll}>Copy all</button>
+            <button className="btn-small" onClick={download}>Download CSV</button>
+            <button className="btn-small ghost" onClick={() => setFresh([])}>Hide</button>
+          </div>
+          <ul className="codes">
+            {fresh.map((f) => (<li key={f.code}><span>{f.label ?? ''}</span><code>{f.code}</code></li>))}
+          </ul>
+        </div>
+      )}
+
+      <h2 className="adm-h2">All codes ({ov.stats.codes.used} used of {ov.stats.codes.total})</h2>
+      <div className="adm-card flush">
+        <table className="tbl">
+          <thead><tr><th>Label</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {rows.length === 0 && <tr><td colSpan={3} className="muted">No codes yet.</td></tr>}
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td>{r.label || <span className="muted">(no label)</span>}</td>
+                <td><span className={`badge ${r.usedAt ? 'open' : r.status === 'revoked' ? 'closed' : ''}`}>{r.usedAt ? 'Used' : r.status === 'revoked' ? 'Revoked' : 'Unused'}</span></td>
+                <td>{!r.usedAt && <button className="btn-small ghost" onClick={() => toggle(r)}>{r.status === 'active' ? 'Revoke' : 'Reactivate'}</button>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}*/
 
 function ResultsTab({ ov }: { ov: Overview }) {
   const [data, setData] = useState<{ ballots: number; categories: ResultCat[] } | null>(null);

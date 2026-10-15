@@ -7,7 +7,6 @@ type Nominee = { id: string; name: string };
 type Category = { id: string; key: string; name: string; nominees: Nominee[] };
 type BallotData = {
   phase: 'not_open' | 'open' | 'closed' | 'unavailable';
-  method: 'codes' | 'open';
   resultsPublished: boolean;
   categories?: Category[];
 };
@@ -24,7 +23,6 @@ export default function Ballot() {
   const [loadError, setLoadError] = useState('');
   const [results, setResults] = useState<ResultsData | null>(null);
   const [sel, setSel] = useState<Record<string, string>>({});
-  const [code, setCode] = useState('');
   const [errorCats, setErrorCats] = useState<Set<string>>(new Set());
   const [formError, setFormError] = useState('');
   const [missingList, setMissingList] = useState<Category[]>([]);
@@ -34,7 +32,6 @@ export default function Ballot() {
   const [badBanners, setBadBanners] = useState<Set<string>>(new Set());
   const busy = useRef(false);
   const alertRef = useRef<HTMLDivElement>(null);
-  const codeRef = useRef<HTMLInputElement>(null);
   const topRef = useRef<HTMLElement>(null);
 
   const load = useCallback(async () => {
@@ -78,7 +75,6 @@ export default function Ballot() {
 
   const cats = useMemo(() => data?.categories ?? [], [data]);
   const completed = cats.filter((c) => sel[c.id]).length;
-  const openMode = data?.method === 'open';
 
   function choose(catId: string, nomId: string) {
     setSel((p) => ({ ...p, [catId]: nomId })); // radio semantics: one value per category replaces the previous
@@ -104,12 +100,6 @@ export default function Ballot() {
       showProblem(`Every category needs one selection — ${missing.length} still to go.`, missing);
       return;
     }
-    if (!openMode && !code.trim()) {
-      setFormError('Enter your personal voting code to submit your ballot.');
-      setMissingList([]);
-      setTimeout(() => codeRef.current?.focus(), 0);
-      return;
-    }
     busy.current = true;
     setSubmitting(true);
     setFormError('');
@@ -118,15 +108,14 @@ export default function Ballot() {
       const res = await fetch('/api/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: openMode ? undefined : code, selections: sel }),
+        body: JSON.stringify({ selections: sel }),
       });
       const body = await res.json().catch(() => ({}));
       if (res.status === 201) {
-        if (openMode) markVoted();
-        else { try { sessionStorage.removeItem(STORE); } catch { /* ignore */ } }
+        markVoted();
         setDone(true);
         setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-      } else if (res.status === 409 && openMode && /already voted/i.test(body.error || '')) {
+      } else if (res.status === 409 && /already voted/i.test(body.error || '')) {
         markVoted();
         setAlreadyVoted(true);
         setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
@@ -148,7 +137,7 @@ export default function Ballot() {
     }
   }
 
-  const showAlreadyVoted = data?.phase === 'open' && openMode && alreadyVoted && !done;
+  const showAlreadyVoted = data?.phase === 'open' && alreadyVoted && !done;
 
   return (
     <>
@@ -166,7 +155,9 @@ export default function Ballot() {
       {data && data.phase === 'not_open' && (
         <div className="panel center">
           <h3>Voting hasn’t opened yet</h3>
-          <p>The ballot is being prepared. Please check back soon.</p>
+          <p>
+            The ballot is being prepared. Please check back soon.
+          </p>
         </div>
       )}
       {data && data.phase === 'unavailable' && (
@@ -186,7 +177,7 @@ export default function Ballot() {
         <div className="panel center success" role="status">
           <div className="check" aria-hidden="true">✓</div>
           <h3>Thank you for voting!</h3>
-          <p>Your ballot has been recorded.{openMode ? '' : ' Your voting code has now been used and cannot be used again.'}</p>
+          <p>Your ballot has been recorded.</p>
         </div>
       )}
 
@@ -262,14 +253,6 @@ export default function Ballot() {
           <section id="submit" className="review" aria-labelledby="submit-heading">
             <h2 id="submit-heading" className="sr-only">Submit your ballot</h2>
             <div className="submit-box">
-              {!openMode && (
-                <>
-                  <label htmlFor="code" className="code-label">Your voting code</label>
-                  <input id="code" ref={codeRef} className="code-input" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
-                         placeholder="XXXXX-XXXXX" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={14} />
-                </>
-              )}
-
               <div ref={alertRef} tabIndex={-1} className={formError ? 'notice error' : 'sr-only'} role="alert">
                 {formError}
                 {missingList.length > 0 && (

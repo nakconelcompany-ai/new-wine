@@ -32,10 +32,10 @@ export async function POST(req: Request) {
         if (r.categoriesMissingNominees.length) {
           throw new HttpError(409, 'Voting cannot open until every category has at least one published nominee.', undefined, { readiness: r });
         }
-        if (cfg.method === 'codes' && r.unusedCodes < 1) throw new HttpError(409, 'Generate voting codes before opening voting.', undefined, { readiness: r });
         await query(`UPDATE voting_config SET status = 'open', updated_at = now() WHERE id = 1`);
         break;
       }
+
       case 'close':
         await query(`UPDATE voting_config SET status = 'closed', updated_at = now() WHERE id = 1`);
         break;
