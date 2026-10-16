@@ -14,7 +14,7 @@ const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('close') }),
   z.object({ action: z.literal('publish_results') }),
   z.object({ action: z.literal('unpublish_results') }),
-  z.object({ action: z.literal('reset_ballots'), confirmation: z.literal('RESET BALLOTS') }),
+  z.object({ action: z.literal('reset_ballots'), confirmation: z.literal('reset') }),
 ]);
 
 export async function POST(req: Request) {
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
         await tx(async (c) => {
           await c.query('DELETE FROM ballots');
           await c.query("DELETE FROM voter_codes WHERE kind = 'device'");
-          await c.query('UPDATE voting_config SET results_published = false, results_published_at = NULL, updated_at = now() WHERE id = 1');
+          await c.query('UPDATE voting_config SET results_published = false, results_published_at = NULL, ballots_reset_at = now(), updated_at = now() WHERE id = 1');
         });
         break;
     }

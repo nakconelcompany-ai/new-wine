@@ -11,6 +11,7 @@ export async function GET() {
     const base = {
       phase: phase as string,
       resultsPublished: cfg.results_published,
+      ballotResetAt: cfg.ballots_reset_at,
     };
     if (phase !== 'open') return json(base);
 

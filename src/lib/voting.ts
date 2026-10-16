@@ -4,12 +4,13 @@ export type VotingRow = {
   status: 'draft' | 'open' | 'closed';
   results_published: boolean;
   results_published_at: Date | null;
+  ballots_reset_at: Date | null;
 };
 
 export type Phase = 'not_open' | 'open' | 'closed';
 
 export async function getConfig(q: typeof query = query): Promise<VotingRow> {
-  const rows = await q<VotingRow>('SELECT status, results_published, results_published_at FROM voting_config WHERE id = 1');
+  const rows = await q<VotingRow>('SELECT status, results_published, results_published_at, ballots_reset_at FROM voting_config WHERE id = 1');
   return rows[0];
 }
 

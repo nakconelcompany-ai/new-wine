@@ -8,6 +8,7 @@ type Category = { id: string; key: string; name: string; nominees: Nominee[] };
 type BallotData = {
   phase: 'not_open' | 'open' | 'closed' | 'unavailable';
   resultsPublished: boolean;
+  ballotResetAt: string | null;
   categories?: Category[];
 };
 type ResultsData = {
@@ -17,6 +18,7 @@ type ResultsData = {
 
 const STORE = 'nw-selections-v1';
 const VOTED = 'nw-voted-v1';
+const RESET_MARKER = 'nw-ballot-reset-v1';
 
 export default function Ballot() {
   const [data, setData] = useState<BallotData | null>(null);
@@ -41,6 +43,13 @@ export default function Ballot() {
       const d: BallotData = await res.json();
       setData(d);
       setLoadError('');
+      try {
+        if (d.ballotResetAt && localStorage.getItem(RESET_MARKER) !== d.ballotResetAt) {
+          localStorage.removeItem(VOTED);
+          localStorage.setItem(RESET_MARKER, d.ballotResetAt);
+          setAlreadyVoted(false);
+        }
+      } catch { /* storage unavailable */ }
       if (d.categories) {
         // Restore saved choices, keeping only those that are still valid.
         try {
