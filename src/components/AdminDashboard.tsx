@@ -11,7 +11,7 @@ type Overview = {
 };
 type ResultCat = { id: string; name: string; totalVotes: number; tie: boolean; noVotes: boolean; leaders: string[]; nominees: { id: string; name: string; votes: number; published: boolean; archived: boolean }[] };
 
-const TABS = ['Overview', 'Voting', 'Results', 'Reset'] as const;
+const TABS = ['Overview', 'Voting', 'Results'] as const;
 type Tab = (typeof TABS)[number];
 
 async function api<T = Record<string, unknown>>(path: string, method = 'GET', body?: unknown): Promise<T> {
@@ -27,7 +27,6 @@ async function api<T = Record<string, unknown>>(path: string, method = 'GET', bo
   if (!res.ok) throw new Error((data as { error?: string }).error || 'Request failed.');
   return data as T;
 }
-
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—');
 
 export default function AdminDashboard() {
@@ -73,7 +72,6 @@ export default function AdminDashboard() {
           {tab === 'Overview' && <OverviewTab ov={ov} />}
           {tab === 'Voting' && <VotingTab ov={ov} run={run} />}
           {tab === 'Results' && <ResultsTab ov={ov} />}
-          {tab === 'Reset' && <ResetTab run={run} />}
         </>
       )}
     </div>
@@ -362,21 +360,4 @@ function ResultsTab({ ov }: { ov: Overview }) {
   );
 }
 
-function ResetTab({ run }: { run: Run }) {
-  const [confirmation, setConfirmation] = useState('');
-  async function resetBallots() {
-    if (confirmation !== 'reset') return;
-    if (!confirm('This permanently deletes every recorded ballot and lets devices vote again. Continue?')) return;
-    const ok = await run(() => api('/api/admin/voting', 'POST', { action: 'reset_ballots', confirmation }), 'All recorded ballots have been reset. Devices can vote again.');
-    if (ok) setConfirmation('');
-  }
-  return (
-    <section className="adm-card reset-card">
-      <h2 className="adm-h2">Reset votes</h2>
-      <p className="muted">This permanently removes all submitted ballots and lets every device vote again. Close voting first.</p>
-      <label htmlFor="reset-confirmation">Type <strong>reset</strong> to continue</label>
-      <input id="reset-confirmation" value={confirmation} onChange={(e) => setConfirmation(e.target.value)} autoComplete="off" />
-      <button type="button" className="btn-danger" onClick={resetBallots} disabled={confirmation !== 'reset'}>Reset all votes</button>
-    </section>
-  );
-}
+// Reset controls intentionally live on the protected /reset page.
