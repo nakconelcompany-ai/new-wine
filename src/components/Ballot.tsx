@@ -1,4 +1,5 @@
 'use client';
+'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BANNERS, SQUARE_POSTER_KEYS } from '@/lib/banners';
@@ -9,6 +10,7 @@ type BallotData = {
   phase: 'not_open' | 'open' | 'closed' | 'unavailable';
   resultsPublished: boolean;
   ballotResetAt: string | null;
+  alreadyVoted: boolean;
   categories?: Category[];
 };
 type ResultsData = {
@@ -43,6 +45,7 @@ export default function Ballot() {
       const d: BallotData = await res.json();
       setData(d);
       setLoadError('');
+      setAlreadyVoted(d.alreadyVoted);
       try {
         if (d.ballotResetAt && localStorage.getItem(RESET_MARKER) !== d.ballotResetAt) {
           localStorage.removeItem(VOTED);

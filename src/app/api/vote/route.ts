@@ -5,19 +5,13 @@ import { HttpError, env } from '@/lib/env';
 import { json, handleError, checkOrigin, clientIp, readJson } from '@/lib/http';
 import { hit, peek } from '@/lib/ratelimit';
 import { getConfig, effectivePhase, ELIGIBLE_NOMINEE } from '@/lib/voting';
+import { DEVICE_COOKIE, deviceHash, readDeviceToken } from '@/lib/device';
 
 export const dynamic = 'force-dynamic';
 
 const Body = z.object({
   selections: z.record(z.string().uuid(), z.string().uuid()),
 });
-
-const DEVICE_COOKIE = 'nw_device';
-const deviceHash = (token: string) => crypto.createHmac('sha256', env.votePepper).update(`device:${token}`).digest('hex');
-function readDeviceToken(req: Request): string | null {
-  const m = (req.headers.get('cookie') || '').match(/(?:^|;\s*)nw_device=([a-f0-9]{64})(?:;|$)/);
-  return m ? m[1] : null;
-}
 
 export async function POST(req: Request) {
   let ip = 'unknown';

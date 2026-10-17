@@ -1,17 +1,23 @@
 import { query } from '@/lib/db';
 import { json, handleError } from '@/lib/http';
 import { getConfig, effectivePhase, categoriesMissingNominees, ELIGIBLE_NOMINEE } from '@/lib/voting';
+import { deviceHash, readDeviceToken } from '@/lib/device';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const cfg = await getConfig();
     const { phase } = effectivePhase(cfg);
+    const token = readDeviceToken(req);
+    const alreadyVoted = token
+      ? (await query<{ voted: boolean }>("SELECT EXISTS(SELECT 1 FROM voter_codes WHERE code_hash = $1 AND kind = 'device') AS voted", [deviceHash(token)]))[0]?.voted ?? false
+      : false;
     const base = {
       phase: phase as string,
       resultsPublished: cfg.results_published,
       ballotResetAt: cfg.ballots_reset_at,
+      alreadyVoted,
     };
     if (phase !== 'open') return json(base);
 
